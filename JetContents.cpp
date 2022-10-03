@@ -10,9 +10,9 @@
 #include "ParticleName.hpp"
 
 namespace Rivet{
-    class ParticleLevelDarkJet: public Analysis{
+    class JetContents: public Analysis{
     public:
-        ParticleLevelDarkJet(): Analysis("ParticleLevelDarkJet"), _totalNumberOfParticles(0), _totalPT(0), _firstEvent(true){}
+        JetContents(): Analysis("JetContents"), _totalNumberOfParticles(0), _totalPT(0), _firstEvent(true){}
 
         void init(){
             const FinalState cnfs;
@@ -116,5 +116,5 @@ namespace Rivet{
         bool _firstEvent;
     };
 
-    DECLARE_RIVET_PLUGIN(ParticleLevelDarkJet);
+    DECLARE_RIVET_PLUGIN(JetContents);
 }
