@@ -8,21 +8,42 @@
 
 class Decay{
 public:
-    Decay(const Rivet::Particle &child){
+    static Decay fromChild(const Rivet::Particle &child){
+        Decay decay;
         const Rivet::Particles parents = child.parents();
         if(parents.size() > 0){
             for(const Rivet::Particle &parent: parents){
-                this->_parents.push_back(parent.pid());
+                decay._parents.push_back(parent.pid());
             }
-            std::sort(this->_parents.begin(), this->_parents.end());    //So that the order doesn't matter
+            std::sort(decay._parents.begin(), decay._parents.end());    //So that the order doesn't matter
             for(const Rivet::Particle &child: parents[0].children()){
-                this->_children.push_back(child.pid());
+                decay._children.push_back(child.pid());
             }
-            std::sort(this->_children.begin(), this->_children.end());
+            std::sort(decay._children.begin(), decay._children.end());
         }
         else{
-            this->_children.push_back(child.pid());
+            decay._children.push_back(child.pid());
         }
+        return decay;
+    }
+
+    static Decay fromParent(const Rivet::Particle &parent){
+        Decay decay;
+        const Rivet::Particles children = parent.children();
+        if(children.size() > 0){
+            for(const Rivet::Particle &child: children){
+                decay._children.push_back(child.pid());
+            }
+            std::sort(decay._children.begin(), decay._children.end());    //So that the order doesn't matter
+            for(const Rivet::Particle &parent: children[0].parents()){
+                decay._parents.push_back(parent.pid());
+            }
+            std::sort(decay._parents.begin(), decay._parents.end());
+        }
+        else{
+            decay._parents.push_back(parent.pid());
+        }
+        return decay;
     }
 
     bool operator==(const Decay &other) const{
@@ -33,7 +54,7 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream &flux, const Decay &decay){
-        if(decay._parents.size() == 0){
+        if(decay._parents.size() == 0 || decay._children.size() == 0){
             flux << "No decay";
         }
         else{
@@ -69,6 +90,8 @@ public:
     }
 
 private:
+    Decay(){}
+
     std::vector<Rivet::PdgId> _parents;
     std::vector<Rivet::PdgId> _children;
 };

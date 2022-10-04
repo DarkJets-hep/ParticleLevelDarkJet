@@ -23,7 +23,6 @@ namespace Rivet{
         }
 
         void analyze(const Event& event){
-            std::cout << particleName(event.beams().first.pid()) << " and " << particleName(event.beams().second.pid()) << std::endl;
             const FinalState &cnfs = apply<FinalState>(event, "FS");
             const Particles &cparticles = apply<FinalState>(event, "CFS").particles();
             const Jets &jets = apply<FastJets>(event, "Jets").jetsByPt();
@@ -37,7 +36,7 @@ namespace Rivet{
                     this->_jetContentsByPT[pdgid] += particle.pT();
                     this->_totalPT += particle.pT();
 
-                    this->_decays[pdgid][Decay(particle)]++;
+                    this->_decays[pdgid][Decay::fromChild(particle)]++;
                 }
             }
 
