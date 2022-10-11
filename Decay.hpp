@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Rivet/Particle.hh"
+#include <Rivet/Particle.hh>
 #include <iostream>
 #include <vector>
 #include <map>
@@ -8,7 +8,10 @@
 
 class Decay{
 public:
-    static Decay fromChild(const Rivet::Particle &child){
+    static Decay fromChild(Rivet::Particle child){
+        while(child.parents().size() == 1 && child.parents()[0].children().size() == 1){
+            child = child.parents()[0];
+        }
         Decay decay;
         const Rivet::Particles parents = child.parents();
         if(parents.size() > 0){
@@ -27,7 +30,10 @@ public:
         return decay;
     }
 
-    static Decay fromParent(const Rivet::Particle &parent){
+    static Decay fromParent(Rivet::Particle parent){
+        while(parent.children().size() == 1 && parent.children()[0].parents().size() == 1){
+            parent = parent.children()[0];
+        }
         Decay decay;
         const Rivet::Particles children = parent.children();
         if(children.size() > 0){
@@ -51,6 +57,13 @@ public:
     }
     bool operator!=(const Decay &other) const{
         return !(*this == other);
+    }
+
+    std::vector<Rivet::PdgId> parents() const{
+        return this->_parents;
+    }
+    std::vector<Rivet::PdgId> children() const{
+        return this->_children;
     }
 
     friend std::ostream& operator<<(std::ostream &flux, const Decay &decay){

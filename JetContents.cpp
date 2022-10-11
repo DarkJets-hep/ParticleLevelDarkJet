@@ -8,6 +8,7 @@
 #include <map>
 #include "Decay.hpp"
 #include "ParticleName.hpp"
+#include "ParticleSort.hpp"
 
 namespace Rivet{
     class JetContents: public Analysis{
@@ -19,7 +20,7 @@ namespace Rivet{
             const ChargedFinalState cfs(cnfs);
             this->declare(cnfs, "FS");
             this->declare(cfs, "CFS");
-            this->declare(FastJets(cnfs, FastJets::ANTIKT, 1.0), "Jets");
+            this->declare(FastJets(cnfs, FastJets::ANTIKT, 1.0, JetAlg::Muons::ALL, JetAlg::Invisibles::ALL), "Jets");
         }
 
         void analyze(const Event& event){
@@ -96,17 +97,6 @@ namespace Rivet{
         }
 
     private:
-        template<typename T1, typename T2> static std::vector<std::pair<T1, T2>> sortMap(const std::map<T1, T2> &map){
-            std::vector<std::pair<T1, T2>> sortedMap;
-            for(const std::pair<T1, T2> &pair: map){
-                sortedMap.push_back(pair);
-            }
-            std::sort(sortedMap.begin(), sortedMap.end(), [](const std::pair<T1, T2> &a, const std::pair<T1, T2> &b){
-                return a.second > b.second;
-            });
-            return sortedMap;
-        }
-
         std::map<PdgId, int> _jetContents;
         std::map<PdgId, double> _jetContentsByPT;
         std::map<PdgId, std::map<Decay, int>> _decays;
