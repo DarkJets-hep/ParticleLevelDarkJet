@@ -3,53 +3,50 @@
 #include <Rivet/Particle.hh>
 #include <iostream>
 #include <vector>
-#include <map>
+#include <algorithm>
 #include "ParticleName.hpp"
 
 class Decay{
 public:
+    Decay(const std::vector<Rivet::PdgId> &parents, const std::vector<Rivet::PdgId> &children):
+        _parents(parents),
+        _children(children)
+    {
+        //So that the order doesn't matter
+        std::sort(this->_parents.begin(), this->_parents.end());
+        std::sort(this->_children.begin(), this->_children.end());
+    }
+
     static Decay fromChild(Rivet::Particle child){
         while(child.parents().size() == 1 && child.parents()[0].children().size() == 1){
             child = child.parents()[0];
         }
-        Decay decay;
         const Rivet::Particles parents = child.parents();
         if(parents.size() > 0){
-            for(const Rivet::Particle &parent: parents){
-                decay._parents.push_back(parent.pid());
-            }
-            std::sort(decay._parents.begin(), decay._parents.end());    //So that the order doesn't matter
-            for(const Rivet::Particle &child: parents[0].children()){
-                decay._children.push_back(child.pid());
-            }
-            std::sort(decay._children.begin(), decay._children.end());
+            const Rivet::Particles children = parents[0].children();
+            std::vector<Rivet::PdgId> parentPdgIds;
+            std::transform(parents.begin(), parents.end(), std::back_inserter(parentPdgIds), [](const Rivet::Particle &p){return p.pid();});
+            std::vector<Rivet::PdgId> childPdgIds;
+            std::transform(children.begin(), children.end(), std::back_inserter(childPdgIds), [](const Rivet::Particle &p){return p.pid();});
+            return Decay(parentPdgIds, childPdgIds);
         }
-        else{
-            decay._children.push_back(child.pid());
-        }
-        return decay;
+        return Decay(std::vector<Rivet::PdgId>(), {child.pid()});
     }
 
     static Decay fromParent(Rivet::Particle parent){
         while(parent.children().size() == 1 && parent.children()[0].parents().size() == 1){
             parent = parent.children()[0];
         }
-        Decay decay;
         const Rivet::Particles children = parent.children();
         if(children.size() > 0){
-            for(const Rivet::Particle &child: children){
-                decay._children.push_back(child.pid());
-            }
-            std::sort(decay._children.begin(), decay._children.end());    //So that the order doesn't matter
-            for(const Rivet::Particle &parent: children[0].parents()){
-                decay._parents.push_back(parent.pid());
-            }
-            std::sort(decay._parents.begin(), decay._parents.end());
+            const Rivet::Particles parents = children[0].parents();
+            std::vector<Rivet::PdgId> parentPdgIds;
+            std::transform(parents.begin(), parents.end(), std::back_inserter(parentPdgIds), [](const Rivet::Particle &p){return p.pid();});
+            std::vector<Rivet::PdgId> childPdgIds;
+            std::transform(children.begin(), children.end(), std::back_inserter(childPdgIds), [](const Rivet::Particle &p){return p.pid();});
+            return Decay(parentPdgIds, childPdgIds);
         }
-        else{
-            decay._parents.push_back(parent.pid());
-        }
-        return decay;
+        return Decay({parent.pid()}, std::vector<Rivet::PdgId>());
     }
 
     bool operator==(const Decay &other) const{
@@ -103,8 +100,6 @@ public:
     }
 
 private:
-    Decay(){}
-
     std::vector<Rivet::PdgId> _parents;
     std::vector<Rivet::PdgId> _children;
 };

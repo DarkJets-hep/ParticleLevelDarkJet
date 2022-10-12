@@ -1,15 +1,23 @@
 #pragma once
 
-#include <TString.h>
-#include <TObjString.h>
-#include <TObjArray.h>
 #include <iostream>
 #include <cstdlib>
+#include <string>
+#include <vector>
+#include <sstream>
 
 inline int getIntFromEnvVar(const char *name, int def){
     const char *envVar = std::getenv(name);
-    if(envVar != nullptr && TString(envVar).IsDigit()){
-        return TString(envVar).Atoi();
+    if(envVar != nullptr){
+        try{
+            return std::stoi(envVar);
+        }
+        catch(const std::invalid_argument &e){
+            std::cout << "Ignoring non-integer value " << envVar << " in " << name << "." << std::endl;
+        }
+        catch(const std::out_of_range &e){
+            std::cout << "Ignoring out of range value " << envVar << " in " << name << "." << std::endl;
+        }
     }
     std::cout << "Environment variable " << name << " not set, defaulting to " << def << ". Did you forget to use export?" << std::endl;
     return def;
@@ -28,14 +36,19 @@ inline std::vector<int> getIntVectorFromEnvVar(const char *name, const std::vect
     const char *envVar = std::getenv(name);
     std::vector<int> result;
     if(envVar != nullptr){
-        TObjArray *splitString = TString(envVar).Tokenize(",");
-        for(const TObject *obj: *splitString){
-            const TString str = static_cast<const TObjString*>(obj)->GetString();
-            if(str.IsDigit()){
-                result.push_back(str.Atoi());
+        std::istringstream stream(envVar);
+        std::string str;
+        while(std::getline(stream, str, ',')){
+            try{
+                result.push_back(std::stoi(str));
+            }
+            catch(const std::invalid_argument &e){
+                std::cout << "Ignoring non-integer value " << str << " in " << name << "." << std::endl;
+            }
+            catch(const std::out_of_range &e){
+                std::cout << "Ignoring out of range value " << str << " in " << name << "." << std::endl;
             }
         }
-        delete[] splitString;
     }
     if(result.size() > 0){
         return result;
