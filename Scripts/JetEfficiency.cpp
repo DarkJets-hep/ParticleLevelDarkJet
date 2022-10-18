@@ -30,7 +30,8 @@ namespace Rivet{
             Analysis("JetEfficiency"),
             _numberOfPlots(0),
             _jetRadius(getDoubleFromEnvVar("JET_RADIUS", 1.0)),
-            _pdf(getStringFromEnvVar("PDF_FILENAME", TString("JetEfficiency")) + ".pdf"),
+            _pdf(getStringFromEnvVar("PDF_FILENAME", TString("../Outputs/JetEfficiency")) + ".pdf"),
+            _plotSecondChildren(getIntFromEnvVar("PLOT_SECOND_CHILDREN", 0)),
             _pTFlow(
                 "", ";Rapidity #it{y};Azimuth #it{#phi};Jet #it{p}_{T} [GeV]",
                 200, -4, 4,    //y bins, min y, max y
@@ -55,9 +56,9 @@ namespace Rivet{
                 "", ";#it{p_{T}} of final state children of parton in jet / Parton #it{p_{T}};Number of events",
                 this->_pTBins, 0.0, this->_maxResponse    //x bins, min x, max x
             ),
-            _resonancePdgId(getIntVectorFromEnvVar("RES_PDGID", std::vector<int>{4000001, 4000002}))
+            _resonancePdgId(getIntVectorFromEnvVar("RES_PDGID", std::vector<int>{4900023}))
         {
-            this->_plotColor = static_cast<PlotColor>(getIntFromEnvVar("PLOT_COLOR", 0));
+            this->_plotColor = static_cast<PlotColor>(getIntFromEnvVar("PLOT_COLOR", 1));
             if(this->_plotColor < 0 || this->_plotColor > 4){
                 std::cout << "Invalid plot color " << this->_plotColor << ". Valid options are: (0) no color, (1) by parton, (2) by jet, (3) by charge, (4) by particle type." << std::endl;
                 this->_plotColor = PlotColor::NONE;
@@ -161,7 +162,7 @@ namespace Rivet{
             Particles children, partons;
             for(Particle child: excitedQuark.children()){
                 children.push_back(child);
-                if(child.mass() > 10){
+                if(this->_plotSecondChildren && child.mass() > 10){
                     while(child.children().size() == 1){
                         child = child.children()[0];
                     }
@@ -340,8 +341,9 @@ namespace Rivet{
         std::map<PdgId, std::map<Decay, int>> _decays;
 
         const double _jetRadius;
-        TCanvas _canvas;
         const TString _pdf;
+        const bool _plotSecondChildren;
+        TCanvas _canvas;
         TH2D _pTFlow;
 
         static constexpr int _deltaRBins = 20;
