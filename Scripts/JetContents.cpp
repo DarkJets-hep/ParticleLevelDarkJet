@@ -1,11 +1,12 @@
-#include "Rivet/Analysis.hh"
-#include "Rivet/Projections/FinalState.hh"
-#include "Rivet/Projections/ChargedFinalState.hh"
-#include "Rivet/Projections/FastJets.hh"
-#include "Rivet/Math/Vector4.hh"
+#include <Rivet/Analysis.hh>
+#include <Rivet/Projections/FinalState.hh>
+#include <Rivet/Projections/ChargedFinalState.hh>
+#include <Rivet/Projections/FastJets.hh>
+#include <Rivet/Math/Vector4.hh>
 #include <iostream>
 #include <vector>
 #include <map>
+#include "../Headers/Darkness.hpp"
 #include "../Headers/Decay.hpp"
 #include "../Headers/ParticleName.hpp"
 #include "../Headers/ParticleSort.hpp"
@@ -13,7 +14,7 @@
 namespace Rivet{
     class JetContents: public Analysis{
     public:
-        JetContents(): Analysis("JetContents"), _totalNumberOfParticles(0), _totalPT(0), _firstEvent(true){}
+        JetContents(): Analysis("JetContents"), _darkParticles(0), _darkPT(0.0), _totalNumberOfParticles(0), _totalPT(0.0), _firstEvent(true){}
 
         virtual void init() override{
             const FinalState cnfs;
@@ -36,6 +37,11 @@ namespace Rivet{
                     this->_totalNumberOfParticles++;
                     this->_jetContentsByPT[pdgid] += particle.pT();
                     this->_totalPT += particle.pT();
+
+                    if(hasDarkAncestor(particle)){
+                        this->_darkParticles++;
+                        this->_darkPT += particle.pT();
+                    }
 
                     this->_decays[pdgid][Decay::fromChild(particle)]++;
                 }
@@ -94,11 +100,18 @@ namespace Rivet{
                     std::cout << parentCount.first << ": " << fraction << "%" << std::endl;
                 }
             }
+
+            //Print the darkness
+            std::cout << std::endl;
+            std::cout << "Multiplicity fraction of particles with dark ancestors: " << (100.0 * this->_darkParticles / this->_totalNumberOfParticles) << "%" << std::endl;
+            std::cout << "pT-fraction of particles with dark ancestors: " << (100.0 * this->_darkPT / this->_totalPT) << "%" << std::endl;
         }
 
     private:
         std::map<PdgId, int> _jetContents;
         std::map<PdgId, double> _jetContentsByPT;
+        int _darkParticles;
+        double _darkPT;
         std::map<PdgId, std::map<Decay, int>> _decays;
         int _totalNumberOfParticles;
         double _totalPT;

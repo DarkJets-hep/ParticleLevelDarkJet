@@ -9,6 +9,7 @@
 #include <iostream>
 #include <algorithm>
 #include <memory>
+#include "../Headers/Darkness.hpp"
 #include "../Headers/Decay.hpp"
 #include "../Headers/ParticleName.hpp"
 #include "../Headers/PlotParticle.hpp"
@@ -30,7 +31,8 @@ namespace Rivet{
             Analysis("JetEfficiency"),
             _numberOfPlots(0),
             _jetRadius(getDoubleFromEnvVar("JET_RADIUS", 1.0)),
-            _pdf(getStringFromEnvVar("PDF_FILENAME", TString("../Outputs/JetEfficiency")) + ".pdf"),
+            _includeInvisibles(getIntFromEnvVar("INCLUDE_INVISIBLES", 0)),
+            _pdf(getStringFromEnvVar("PDF_FILENAME", TString("../Outputs/JetEfficiency.pdf"))),
             _plotSecondChildren(getIntFromEnvVar("PLOT_SECOND_CHILDREN", 0)),
             _pTFlow(
                 "", ";Rapidity #it{y};Azimuth #it{#phi};Jet #it{p}_{T} [GeV]",
@@ -40,8 +42,14 @@ namespace Rivet{
             _efficiencyData(this->_deltaRBins),
             _totalPT(0),
             _purePT(0),
+            _responseSum(0),
+            _numberOfEventsWithJetResponse(0),
             _partonPTPlot(
                 "", ";Parton #it{p_{T}} (GeV);Number of events",
+                this->_pTBins, 0.0, this->_maxPT    //x bins, min x, max x
+            ),
+            _partonInvariantMassPlot(
+                "", ";Invariant mass of both partons (GeV);Number of events",
                 this->_pTBins, 0.0, this->_maxPT    //x bins, min x, max x
             ),
             _jetResponsePlot(
@@ -56,6 +64,46 @@ namespace Rivet{
                 "", ";#it{p_{T}} of final state children of parton in jet / Parton #it{p_{T}};Number of events",
                 this->_pTBins, 0.0, this->_maxResponse    //x bins, min x, max x
             ),
+            _leadingJetPTPlot(
+                "", ";#it{p_{T}} of jet (GeV);Number of events",
+                this->_pTBins, 0.0, this->_maxPT    //x bins, min x, max x
+            ),
+            _subLeadingJetPTPlot(
+                "", ";#it{p_{T}} of jet (GeV);Number of events",
+                this->_pTBins, 0.0, this->_maxPT    //x bins, min x, max x
+            ),
+            _thirdLeadingJetPTPlot(
+                "", ";#it{p_{T}} of jet (GeV);Number of events",
+                this->_pTBins, 0.0, this->_maxPT    //x bins, min x, max x
+            ),
+            _dijetInvariantMassPlot(
+                "", ";Dijet invariant mass (GeV);Number of events",
+                this->_pTBins, 0.0, this->_maxPT    //x bins, min x, max x
+            ),
+            _leadingJetInvisiblePlot(
+                "", ";Fraction of pT of the jet that is invisible (%);Number of events",
+                this->_pTBins, 0.0, 100.0    //x bins, min x, max x
+            ),
+            _subLeadingJetInvisiblePlot(
+                "", ";Fraction of pT of the jet that is invisible (%);Number of events",
+                this->_pTBins, 0.0, 100.0    //x bins, min x, max x
+            ),
+            _thirdLeadingJetInvisiblePlot(
+                "", ";Fraction of pT of the jet that is invisible (%);Number of events",
+                this->_pTBins, 0.0, 100.0    //x bins, min x, max x
+            ),
+            _leadingJetDarknessPlot(
+                "", ";Fraction of pT of the jet that has dark ancestors (%);Number of events",
+                this->_pTBins, 0.0, 100.0    //x bins, min x, max x
+            ),
+            _subLeadingJetDarknessPlot(
+                "", ";Fraction of pT of the jet that has dark ancestors (%);Number of events",
+                this->_pTBins, 0.0, 100.0    //x bins, min x, max x
+            ),
+            _thirdLeadingJetDarknessPlot(
+                "", ";Fraction of pT of the jet that has dark ancestors (%);Number of events",
+                this->_pTBins, 0.0, 100.0    //x bins, min x, max x
+            ),
             _resonancePdgId(getIntVectorFromEnvVar("RES_PDGID", std::vector<int>{4900023}))
         {
             this->_plotColor = static_cast<PlotColor>(getIntFromEnvVar("PLOT_COLOR", 1));
@@ -63,6 +111,13 @@ namespace Rivet{
                 std::cout << "Invalid plot color " << this->_plotColor << ". Valid options are: (0) no color, (1) by parton, (2) by jet, (3) by charge, (4) by particle type." << std::endl;
                 this->_plotColor = PlotColor::NONE;
             }
+
+            this->_subLeadingJetPTPlot.SetLineColor(EColor::kOrange - 3);
+            this->_subLeadingJetInvisiblePlot.SetLineColor(EColor::kOrange - 3);
+            this->_subLeadingJetDarknessPlot.SetLineColor(EColor::kOrange - 3);
+            this->_thirdLeadingJetPTPlot.SetLineColor(EColor::kGreen + 2);
+            this->_thirdLeadingJetInvisiblePlot.SetLineColor(EColor::kGreen + 2);
+            this->_thirdLeadingJetDarknessPlot.SetLineColor(EColor::kGreen + 2);
         }
 
         virtual void init() override{
@@ -70,7 +125,7 @@ namespace Rivet{
             const ChargedFinalState cfs(cnfs);
             this->declare(cnfs, "FS");
             this->declare(cfs, "CFS");
-            this->declare(FastJets(cnfs, FastJets::ANTIKT, this->_jetRadius), "Jets");
+            this->declare(FastJets(cnfs, FastJets::ANTIKT, this->_jetRadius, JetAlg::Muons::ALL, this->_includeInvisibles ? JetAlg::Invisibles::ALL : JetAlg::Invisibles::NONE), "Jets");
 
             this->_canvas.Print(this->_pdf + "[");
         }
@@ -148,6 +203,8 @@ namespace Rivet{
                 if(deltaR <= this->_jetRadius){
                     if(jet.pT() < parton.pT() * this->_maxResponse){
                         this->_jetResponsePlot.AddBinContent(jet.pT() / parton.pT() * this->_pTBins / this->_maxResponse);
+                        this->_responseSum += jet.pT() / parton.pT();
+                        this->_numberOfEventsWithJetResponse++;
                     }
                     if(fsInJetPT < parton.pT() * this->_maxResponse){
                         this->_fsInJetResponsePlot.AddBinContent(fsInJetPT / parton.pT() * this->_pTBins / this->_maxResponse);
@@ -157,6 +214,46 @@ namespace Rivet{
                     this->_fsResponsePlot.AddBinContent(fsPT / parton.pT() * this->_pTBins / this->_maxResponse);
                 }
             }
+
+            //Parton invariant mass
+            this->_partonInvariantMassPlot.AddBinContent((excitedQuark.children()[0].momentum() + excitedQuark.children()[1].momentum()).mass() * this->_pTBins / this->_maxPT);
+
+            //Jet pT and invariant mass
+            this->_leadingJetPTPlot.AddBinContent(jets[0].pT() * this->_pTBins / this->_maxPT);
+            this->_subLeadingJetPTPlot.AddBinContent(jets[1].pT() * this->_pTBins / this->_maxPT);
+            this->_thirdLeadingJetPTPlot.AddBinContent(jets[2].pT() * this->_pTBins / this->_maxPT);
+            this->_dijetInvariantMassPlot.AddBinContent((jets[0].momentum() + jets[1].momentum()).mass() * this->_pTBins / this->_maxPT);
+            
+            //Invisibility and darkness
+            this->_leadingJetInvisiblePlot.AddBinContent(pTInvisibility(jets[0]) * this->_pTBins);
+            this->_subLeadingJetInvisiblePlot.AddBinContent(pTInvisibility(jets[1]) * this->_pTBins);
+            this->_thirdLeadingJetInvisiblePlot.AddBinContent(pTInvisibility(jets[2]) * this->_pTBins);
+            this->_leadingJetDarknessPlot.AddBinContent(pTDarkness(jets[0]) * this->_pTBins);
+            this->_subLeadingJetDarknessPlot.AddBinContent(pTDarkness(jets[1]) * this->_pTBins);
+            this->_thirdLeadingJetDarknessPlot.AddBinContent(pTDarkness(jets[2]) * this->_pTBins);
+
+            //Jet multiplicity
+            int jetMultiplicity = 0, darkJetMultiplicity20 = 0, darkJetMultiplicity50 = 0, darkJetMultiplicity80 = 0;
+            for(const Jet &jet: jets){
+                if(jet.pT() < 30){
+                    break;
+                }
+                jetMultiplicity++;
+                const double darkness = pTDarkness(jet);
+                if(darkness > 0.2){
+                    darkJetMultiplicity20++;
+                }
+                if(darkness > 0.5){
+                    darkJetMultiplicity50++;
+                }
+                if(darkness > 0.8){
+                    darkJetMultiplicity80++;
+                }
+            }
+            this->_jetMultiplicityData[jetMultiplicity]++;
+            this->_darkJetMultiplicity20Data[darkJetMultiplicity20]++;
+            this->_darkJetMultiplicity50Data[darkJetMultiplicity50]++;
+            this->_darkJetMultiplicity80Data[darkJetMultiplicity80]++;
 
             //Find the children of the particle
             Particles children, partons;
@@ -190,7 +287,17 @@ namespace Rivet{
 
             //Plot the stable particles
             for(const Particle &finalParticle: cnfs.particles()){
-                plotParticle(finalParticle, 6, particleColor(finalParticle, jets, partons), false, 1.5);
+                //std::cout << finalParticle.origin().t() << std::endl;
+                int marker = 20;
+                if(!finalParticle.isVisible()){
+                    if(finalParticle.isNeutrino()){
+                        marker = 24;
+                    }
+                    else{    //Dark matter
+                        marker = 25;
+                    }
+                }
+                plotParticle(finalParticle, marker, particleColor(finalParticle, jets, partons), false, 0.3);
             }
 
             //Plot the excited quark and its decay products
@@ -220,14 +327,51 @@ namespace Rivet{
             for(const auto &pdgidPlotPair: this->_partonPTPlotByType){
                 this->plotHistogram(*pdgidPlotPair.second);
             }
+            this->plotHistogram(this->_partonInvariantMassPlot);
             this->plotHistogram(this->_jetResponsePlot);
             this->plotHistogram(this->_fsResponsePlot);
             this->plotHistogram(this->_fsInJetResponsePlot);
+            this->plotHistograms({&this->_leadingJetPTPlot, &this->_subLeadingJetPTPlot, &this->_thirdLeadingJetPTPlot});
+            if(this->_includeInvisibles){
+                this->plotHistograms({&this->_leadingJetInvisiblePlot, &this->_subLeadingJetInvisiblePlot, &this->_thirdLeadingJetInvisiblePlot});
+            }
+            this->plotHistograms({&this->_leadingJetDarknessPlot, &this->_subLeadingJetDarknessPlot, &this->_thirdLeadingJetDarknessPlot});
+
+            //Plot the jet multiplicity
+            const auto multiplicities = std::views::keys(this->_jetMultiplicityData);
+            const int maxMultiplicity = *std::max_element(multiplicities.begin(), multiplicities.end());
+            TH1D darkJetMultiplicity80Plot(
+                "", ";Jet multiplicity;Number of events",
+                maxMultiplicity * 2 + 2, 0.0, maxMultiplicity + 1    //x bins, min x, max x
+            ),
+            &darkJetMultiplicity50Plot = *static_cast<TH1D*>(darkJetMultiplicity80Plot.Clone()),
+            &darkJetMultiplicity20Plot = *static_cast<TH1D*>(darkJetMultiplicity80Plot.Clone()),
+            &jetMultiplicityPlot = *static_cast<TH1D*>(darkJetMultiplicity80Plot.Clone());
+            darkJetMultiplicity20Plot.SetLineColor(EColor::kOrange - 3);
+            darkJetMultiplicity50Plot.SetLineColor(EColor::kGreen + 2);
+            darkJetMultiplicity80Plot.SetLineColor(EColor::kMagenta + 2);
+            for(const auto &multiplicityEventsPair: this->_jetMultiplicityData){
+                jetMultiplicityPlot.AddBinContent(multiplicityEventsPair.first * 2 + 1, multiplicityEventsPair.second);
+                jetMultiplicityPlot.AddBinContent(multiplicityEventsPair.first * 2, multiplicityEventsPair.second);
+            }
+            for(const auto &multiplicityEventsPair: this->_darkJetMultiplicity20Data){
+                darkJetMultiplicity20Plot.AddBinContent(multiplicityEventsPair.first * 2 + 1, multiplicityEventsPair.second);
+                darkJetMultiplicity20Plot.AddBinContent(multiplicityEventsPair.first * 2, multiplicityEventsPair.second);
+            }
+            for(const auto &multiplicityEventsPair: this->_darkJetMultiplicity50Data){
+                darkJetMultiplicity50Plot.AddBinContent(multiplicityEventsPair.first * 2 + 1, multiplicityEventsPair.second);
+                darkJetMultiplicity50Plot.AddBinContent(multiplicityEventsPair.first * 2, multiplicityEventsPair.second);
+            }
+            for(const auto &multiplicityEventsPair: this->_darkJetMultiplicity80Data){
+                darkJetMultiplicity80Plot.AddBinContent(multiplicityEventsPair.first * 2 + 1, multiplicityEventsPair.second);
+                darkJetMultiplicity80Plot.AddBinContent(multiplicityEventsPair.first * 2, multiplicityEventsPair.second);
+            }
+            this->plotHistograms({&darkJetMultiplicity80Plot, &darkJetMultiplicity50Plot, &darkJetMultiplicity20Plot, &jetMultiplicityPlot});
 
             //Close the plot
             this->_canvas.Print(this->_pdf + "]");
 
-            //Print the purity decay modes
+            //Print the decay modes
             for(PdgId parent: this->_resonancePdgId){
                 const auto decays = sortMap(this->_decays[parent]);
                 std::cout << std::endl << "Decay modes of " << particleName(parent) << ":" << std::endl << "----" << std::endl;
@@ -235,13 +379,28 @@ namespace Rivet{
                     std::cout << decayCount.first << ": " << (100.0 * decayCount.second / this->_numberOfParticles[parent]) << "%" << std::endl;
                 }
             }
-            std::cout << std::endl << "Purity: " << (100.0 * this->_purePT / this->_totalPT) << "%" << std::endl;
+
+            //Print the efficiency, purity and response
+            std::cout << std::endl;
+            std::cout << "Purity: " << (100.0 * this->_purePT / this->_totalPT) << "%" << std::endl;
+            std::cout << "Efficiency at DeltaR = R: " << (50.0 * this->_efficiencyData[this->_efficiencyData.size() * this->_jetRadius / this->_deltaRMax] / this->numEvents()) << "%" << std::endl;
+            std::cout << "Average response: " << (this->_responseSum / this->_numberOfEventsWithJetResponse) << std::endl;
         }
 
     private:
         void plotHistogram(TH1D &histogram){
             histogram.SetStats(0);
             histogram.Draw("colz");
+            this->_canvas.Print(this->_pdf);
+        }
+
+        void plotHistograms(const std::vector<TH1D*> &histograms){
+            bool first = true;
+            for(TH1D *histogram: histograms){
+                histogram->SetStats(0);
+                histogram->Draw(first ? "hist" : "histsame");
+                first = false;
+            }
             this->_canvas.Print(this->_pdf);
         }
 
@@ -341,6 +500,7 @@ namespace Rivet{
         std::map<PdgId, std::map<Decay, int>> _decays;
 
         const double _jetRadius;
+        const bool _includeInvisibles;
         const TString _pdf;
         const bool _plotSecondChildren;
         TCanvas _canvas;
@@ -350,12 +510,18 @@ namespace Rivet{
         static constexpr double _deltaRMax = 2.0;
         std::vector<double> _efficiencyData;
         double _totalPT, _purePT;
+        double _responseSum;
+        int _numberOfEventsWithJetResponse;
+        std::map<int, int> _jetMultiplicityData;    //Contains the number of jets with pT > 30GeV as key, and the number of events with that key as value
+        std::map<int, int> _darkJetMultiplicity20Data, _darkJetMultiplicity50Data, _darkJetMultiplicity80Data;    //Same as above but only counts jets with darkness > 20% / 50% / 80%
 
         static constexpr int _pTBins = 50;
         static constexpr double _maxPT = 3e3;
-        static constexpr double _maxResponse = 2.0;
-        TH1D _partonPTPlot, _jetResponsePlot, _fsResponsePlot, _fsInJetResponsePlot;
+        static constexpr double _maxResponse = 3.0;
+        TH1D _partonPTPlot, _partonInvariantMassPlot, _jetResponsePlot, _fsResponsePlot, _fsInJetResponsePlot;
         std::map<PdgId, std::unique_ptr<TH1D>> _partonPTPlotByType;
+        TH1D _leadingJetPTPlot, _subLeadingJetPTPlot, _thirdLeadingJetPTPlot, _dijetInvariantMassPlot;
+        TH1D _leadingJetInvisiblePlot, _subLeadingJetInvisiblePlot, _thirdLeadingJetInvisiblePlot, _leadingJetDarknessPlot, _subLeadingJetDarknessPlot, _thirdLeadingJetDarknessPlot;
 
         const std::vector<PdgId> _resonancePdgId;
         PlotColor _plotColor;
