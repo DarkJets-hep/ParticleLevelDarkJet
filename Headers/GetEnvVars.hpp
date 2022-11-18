@@ -19,7 +19,7 @@ inline int getIntFromEnvVar(const char *name, int def){
             std::cout << "Ignoring out of range value " << envVar << " in " << name << "." << std::endl;
         }
     }
-    std::cout << "Environment variable " << name << " not set, defaulting to " << def << ". Did you forget to use export?" << std::endl;
+    std::cout << "Environment variable " << name << " not set, defaulting to " << def << ". Did you accidentally define it with a semicolon?" << std::endl;
     return def;
 }
 
@@ -28,7 +28,7 @@ inline double getDoubleFromEnvVar(const char *name, double def){
     if(envVar != nullptr){
         return std::stod(envVar);
     }
-    std::cout << "Environment variable " << name << " not set, defaulting to " << def << ". Did you forget to use export?" << std::endl;
+    std::cout << "Environment variable " << name << " not set, defaulting to " << def << ". Did you accidentally define it with a semicolon?" << std::endl;
     return def;
 }
 
@@ -37,7 +37,7 @@ template<typename String> String getStringFromEnvVar(const char *name, const Str
     if(envVar != nullptr){
         return envVar;
     }
-    std::cout << "Environment variable " << name << " not set, defaulting to " << def << ". Did you forget to use export?" << std::endl;
+    std::cout << "Environment variable " << name << " not set, defaulting to " << def << ". Did you accidentally define it with a semicolon?" << std::endl;
     return def;
 }
 
@@ -77,7 +77,7 @@ inline std::vector<int> getIntVectorFromEnvVar(const char *name, const std::vect
     }
     std::cout << ").";
     if(envVar == nullptr){
-        std::cout << " Did you forget to use export?" << std::endl;
+        std::cout << " Did you accidentally define it with a semicolon?" << std::endl;
     }
     return def;
 }

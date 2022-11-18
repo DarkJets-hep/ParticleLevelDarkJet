@@ -155,6 +155,8 @@ static std::string particleName(int pdgid){
         case 4900101: return "DARK_QUARK";
         case 4900111: return "DARK_PION";
         case 4900113: return "DARK_RHO_MESON";
+        case 4900211: return "DARK_KAON";
+        case 4900213: return "DARK_KSTAR";
     }
 
     if(pdgid < 0){
@@ -305,6 +307,8 @@ static std::string particleNameAsTLatex(int pdgid){
         case 4900101: return "q_{D}";
         case 4900111: return "#pi_{D}";
         case 4900113: return "#rho_{D}";
+        case 4900211: return "K_{D}";
+        case 4900213: return "K*_{D}";
     }
 
     if(pdgid < 0){
