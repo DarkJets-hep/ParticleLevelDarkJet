@@ -13,11 +13,14 @@ static bool isDark(const Rivet::Particle &particle){
 }
 
 inline bool hasDarkAncestor(Rivet::Particle particle){
+    if(isDark(particle)){
+        return true;
+    }
     while(particle.parents().size() > 0){
+        particle = particlesByEnergy(particle.parents())[0];
         if(isDark(particle)){
             return true;
         }
-        particle = particlesByEnergy(particle.parents())[0];
     }
     return false;
 }
