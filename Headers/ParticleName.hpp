@@ -152,6 +152,7 @@ static std::string particleName(int pdgid){
         case Rivet::PID::ANY: return "*";
 
         case 4900023: return "ZPRIMEBOSON";
+        case 4900022: return "DARK_PHOTON";
         case 4900101: return "DARK_QUARK";
         case 4900111: return "DARK_PION";
         case 4900113: return "DARK_RHO_MESON";
@@ -304,6 +305,7 @@ static std::string particleNameAsTLatex(int pdgid){
         case Rivet::PID::ANY: return "*";
 
         case 4900023: return "Z'";
+        case 4900022: return "#gamma'";
         case 4900101: return "q_{D}";
         case 4900111: return "#pi_{D}";
         case 4900113: return "#rho_{D}";
