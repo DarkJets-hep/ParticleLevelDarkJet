@@ -1,7 +1,9 @@
 #include <TLorentzVector.h>
 #include <xAODMetaData/FileMetaData.h>
 #include <xAODTruth/TruthParticleContainer.h>
+#include <xAODJet/JetContainer.h>
 #include <xAODEventInfo/EventInfo.h>
+#include <xAODPFlow/FlowElementContainer.h>
 #include <fastjet/PseudoJet.hh>
 #include <fastjet/ClusterSequence.hh>
 #include "dark-jet-studies/DarkJetStudy.h"
@@ -16,6 +18,9 @@ std::regex DarkJetStudy::darkRegex("^49[0-9]{3}([013-9][0-9]|[0-9][0-24-9])$");
 DarkJetStudy::DarkJetStudy(const std::string& name, ISvcLocator *pSvcLocator):
     EL::AnaAlgorithm(name, pSvcLocator),
     _numEvents(0),
+    _efficiencyData(this->_deltaRBins + 1),
+    _responseSum(0.0),
+    _numberOfEventsWithResponse(0),
     _leadingJetPTPlot(nullptr),
     _subLeadingJetPTPlot(nullptr),
     _thirdLeadingJetPTPlot(nullptr),
@@ -25,61 +30,85 @@ DarkJetStudy::DarkJetStudy(const std::string& name, ISvcLocator *pSvcLocator):
     _thirdLeadingJetInvisiblePlot(nullptr),
     _leadingJetDarknessPlot(nullptr),
     _subLeadingJetDarknessPlot(nullptr),
-    _thirdLeadingJetDarknessPlot(nullptr)
+    _thirdLeadingJetDarknessPlot(nullptr),
+    _responsePlot(nullptr),
+    _leadingEfficiencyPlot(nullptr),
+    _subLeadingEfficiencyPlot(nullptr),
+    _thirdLeadingEfficiencyPlot(nullptr)
 {}
 
 
 StatusCode DarkJetStudy::initialize(){
     ANA_CHECK(this->book(TH1D(
-        "leadingJetPT", ";#it{p_{T}} of jet (GeV);Number of events",
-        this->_bins, 0.0, this->_maxPT    //x bins, min x, max x
+        "leadingJetPT", ";#it{p_{T}} of truth jet (GeV);Number of events",
+        this->_bins, 0.0, this->_maxPT/2    //x bins, min x, max x
     )));
     this->_leadingJetPTPlot = this->hist("leadingJetPT");
     ANA_CHECK(this->book(TH1D(
-        "subLeadingJetPT", ";#it{p_{T}} of jet (GeV);Number of events",
-        this->_bins, 0.0, this->_maxPT    //x bins, min x, max x
+        "subLeadingJetPT", ";#it{p_{T}} of truth jet (GeV);Number of events",
+        this->_bins, 0.0, this->_maxPT/2    //x bins, min x, max x
     )));
     this->_subLeadingJetPTPlot = this->hist("subLeadingJetPT");
     ANA_CHECK(this->book(TH1D(
-        "thirdLeadingJetPT", ";#it{p_{T}} of jet (GeV);Number of events",
-        this->_bins, 0.0, this->_maxPT    //x bins, min x, max x
+        "thirdLeadingJetPT", ";#it{p_{T}} of truth jet (GeV);Number of events",
+        this->_bins, 0.0, this->_maxPT/2    //x bins, min x, max x
     )));
     this->_thirdLeadingJetPTPlot = this->hist("thirdLeadingJetPT");
     ANA_CHECK(this->book(TH1D(
-        "dijetInvariantMass", ";Dijet invariant mass (GeV);Number of events",
+        "dijetInvariantMass", ";Truth dijet invariant mass (GeV);Number of events",
         this->_bins, 0.0, this->_maxPT    //x bins, min x, max x
     )));
     this->_dijetInvariantMassPlot = this->hist("dijetInvariantMass");
     ANA_CHECK(this->book(TH1D(
-        "leadingJetInvisible", ";Fraction of pT of the jet that is invisible (%);Number of events",
+        "leadingJetInvisible", ";Invisibility of truth jet (%);Number of events",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
     this->_leadingJetInvisiblePlot = this->hist("leadingJetInvisible");
     ANA_CHECK(this->book(TH1D(
-        "subLeadingJetInvisible", ";Fraction of pT of the jet that is invisible (%);Number of events",
+        "subLeadingJetInvisible", ";Invisibility of truth jet (%);Number of events",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
     this->_subLeadingJetInvisiblePlot = this->hist("subLeadingJetInvisible");
     ANA_CHECK(this->book(TH1D(
-        "thirdLeadingJetInvisible", ";Fraction of pT of the jet that is invisible (%);Number of events",
+        "thirdLeadingJetInvisible", ";Invisibility of truth jet (%);Number of events",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
     this->_thirdLeadingJetInvisiblePlot = this->hist("thirdLeadingJetInvisible");
     ANA_CHECK(this->book(TH1D(
-        "leadingJetDarkness", ";Fraction of pT of the jet that has dark ancestors (%);Number of events",
+        "leadingJetDarkness", ";Darkness of truth jet (%);Number of events",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
     this->_leadingJetDarknessPlot = this->hist("leadingJetDarkness");
     ANA_CHECK(this->book(TH1D(
-        "subLeadingJetDarkness", ";Fraction of pT of the jet that has dark ancestors (%);Number of events",
+        "subLeadingJetDarkness", ";Darkness of truth jet (%);Number of events",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
     this->_subLeadingJetDarknessPlot = this->hist("subLeadingJetDarkness");
     ANA_CHECK(this->book(TH1D(
-        "thirdLeadingJetDarkness", ";Fraction of pT of the jet that has dark ancestors (%);Number of events",
+        "thirdLeadingJetDarkness", ";Darkness of truth jet (%);Number of events",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
     this->_thirdLeadingJetDarknessPlot = this->hist("thirdLeadingJetDarkness");
+    ANA_CHECK(this->book(TH1D(
+        "response", ";Response (Reconstruction jet #it{p_{T}} / Truth jet #it{p_{T}});Number of events",
+        this->_bins, 0.0, this->_maxResponse    //x bins, min x, max x
+    )));
+    this->_responsePlot = this->hist("response");
+    ANA_CHECK(this->book(TH1D(
+        "leadingEfficiency", ";#it{#Delta R};Number of events",
+        this->_deltaRBins, 0.0, this->_deltaRMax    //x bins, min x, max x
+    )));
+    this->_leadingEfficiencyPlot = this->hist("leadingEfficiency");
+    ANA_CHECK(this->book(TH1D(
+        "subLeadingEfficiency", ";#it{#Delta R};Number of events",
+        this->_deltaRBins, 0.0, this->_deltaRMax    //x bins, min x, max x
+    )));
+    this->_subLeadingEfficiencyPlot = this->hist("subLeadingEfficiency");
+    ANA_CHECK(this->book(TH1D(
+        "thirdLeadingEfficiency", ";#it{#Delta R};Number of events",
+        this->_deltaRBins, 0.0, this->_deltaRMax    //x bins, min x, max x
+    )));
+    this->_thirdLeadingEfficiencyPlot = this->hist("thirdLeadingEfficiency");
 
     return StatusCode::SUCCESS;
 }
@@ -91,13 +120,39 @@ StatusCode DarkJetStudy::execute(){
         std::cout << "Event " << this->_numEvents << std::endl;
     }
 
+    static const fastjet::JetDefinition antikt(fastjet::antikt_algorithm, jetRadius, fastjet::E_scheme, fastjet::Best);
+
     const xAOD::TruthParticleContainer *particles = nullptr;
+    const xAOD::JetContainer *xAODRecoJets = nullptr;
+    std::vector<fastjet::PseudoJet> recoJets;
     const xAOD::EventInfo *eventInfo = nullptr;
     ANA_CHECK(this->evtStore()->retrieve(particles, "TruthParticles"));
+    std::cout.setstate(std::ios_base::failbit);
+    if(this->evtStore()->retrieve(xAODRecoJets, "AntiKt10RCEMPFlowJets") == StatusCode::SUCCESS){
+        std::cout.clear();
+        //If the reconstruction jets are directly available, convert them to fastjet jets so that the type is always the same
+        for(const xAOD::Jet *jet: *xAODRecoJets){
+            recoJets.push_back(fastjet::PseudoJet(jet->px(), jet->py(), jet->pz(), jet->e()));
+        }
+    }
+    else{
+        std::cout.clear();
+        //If the reconstruction jets aren't directly available, build them from reconstruction particles
+        const xAOD::FlowElementContainer *chargedParticles = nullptr, *neutralParticles = nullptr;
+        ANA_CHECK(this->evtStore()->retrieve(chargedParticles, "JetETMissChargedParticleFlowObjects"));
+        ANA_CHECK(this->evtStore()->retrieve(neutralParticles, "JetETMissNeutralParticleFlowObjects"));
+        std::vector<fastjet::PseudoJet> recoJetParticles;
+        for(const xAOD::FlowElementContainer *container: {chargedParticles, neutralParticles}){
+            for(const xAOD::FlowElement *particle: *container){
+                recoJetParticles.push_back(fastjet::PseudoJet(particle->p4().X(), particle->p4().Y(), particle->p4().Z(), particle->e()));
+            }
+        }
+        const fastjet::ClusterSequence recoClustSeqAntikt(recoJetParticles, antikt);
+        recoJets = sorted_by_pt(recoClustSeqAntikt.inclusive_jets(5000.0));
+    }
     ANA_CHECK(this->evtStore()->retrieve(eventInfo, "EventInfo"));
 
     std::vector<fastjet::PseudoJet> jetParticles;
-    std::vector<const xAOD::TruthParticle*> finalStateParticles;
     for(const xAOD::TruthParticle *particle: *particles){
         if(particle->status() != 1){    //If the particle is unstable
             continue;
@@ -108,32 +163,75 @@ StatusCode DarkJetStudy::execute(){
 
         jetParticles.push_back(fastjet::PseudoJet(particle->px(), particle->py(), particle->pz(), particle->e()));
         jetParticles.back().set_user_index(particle->index());
-        finalStateParticles.push_back(particle);
     }
 
     //Manual jet building
-    static fastjet::JetDefinition antikt(fastjet::antikt_algorithm, jetRadius, fastjet::E_scheme, fastjet::Best);
-    //Forms pseudojets from stable particles.
-    fastjet::ClusterSequence clustSeqAntikt(jetParticles, antikt);
     std::vector<Jet> jets;
-    const auto pseudoJets = sorted_by_pt(clustSeqAntikt.inclusive_jets(5000.0));
+    const fastjet::ClusterSequence clustSeqAntikt(jetParticles, antikt);
+    const std::vector<fastjet::PseudoJet> pseudoJets = sorted_by_pt(clustSeqAntikt.inclusive_jets(5000.0));
     for(const fastjet::PseudoJet &jet: pseudoJets){
         jets.push_back(Jet(jet, particles));
     }
 
+    //Efficiency and response
+    for(const Jet &truthJet: jets){
+        double deltaR = 1e6;    //Start with something that's guaranteed to be much larger than the actual deltaR
+        const fastjet::PseudoJet *recoJet = nullptr;
+        for(const fastjet::PseudoJet &newJet: recoJets){
+            const double deltaY = truthJet.rapidity() - newJet.rapidity();
+            double deltaPhi = truthJet.phi() - newJet.phi();
+            if(deltaPhi < -M_PI) deltaPhi += 2 * M_PI;
+            else if(deltaPhi > M_PI) deltaPhi -= 2 * M_PI;
+            const double newDeltaR = std::sqrt(deltaY * deltaY + deltaPhi * deltaPhi);
+            if(newDeltaR < deltaR){
+                deltaR = newDeltaR;
+                recoJet = &newJet;
+            }
+        }
+
+        //Efficiency
+        for(int i = deltaR * this->_deltaRBins / this->_deltaRMax; i < this->_deltaRBins + 1; i++){
+            this->_efficiencyData[i]++;
+        }
+        if(jets.size() > 0 && truthJet == jets[0]){
+            this->_leadingEfficiencyPlot->Fill(deltaR);
+        }
+        else if(jets.size() > 1 && truthJet == jets[1]){
+            this->_subLeadingEfficiencyPlot->Fill(deltaR);
+        }
+        else if(jets.size() > 2 && truthJet == jets[2]){
+            this->_thirdLeadingEfficiencyPlot->Fill(deltaR);
+            break;
+        }
+
+        //Response
+        if(deltaR <= 0.3){
+            const double response = recoJet->pt() / truthJet.pt();
+            this->_responsePlot->Fill(response);
+            this->_responseSum += response;
+            this->_numberOfEventsWithResponse++;
+            const double invisibility = pTInvisibility(truthJet);
+            const double darkness = pTDarkness(truthJet);
+            this->_responseSumByInvisibility[invisibility * this->_bins] += response;
+            this->_numberOfEventsByInvisibility[invisibility * this->_bins]++;
+            this->_responseSumByDarkness[darkness * this->_bins] += response;
+            this->_numberOfEventsByDarkness[darkness * this->_bins]++;
+        }
+    }
+
     //Jet pT and invariant mass
-    this->_leadingJetPTPlot->Fill(jets[0].pT() / 1000);
-    this->_subLeadingJetPTPlot->Fill(jets[1].pT() / 1000);
-    this->_thirdLeadingJetPTPlot->Fill(jets[2].pT() / 1000);
-    this->_dijetInvariantMassPlot->Fill(invariantMass(jets[0].momentum() + jets[1].momentum()) / 1000);
+    if(jets.size() > 0) this->_leadingJetPTPlot->Fill(jets[0].pT() / 1000);
+    if(jets.size() > 1) this->_subLeadingJetPTPlot->Fill(jets[1].pT() / 1000);
+    if(jets.size() > 2) this->_thirdLeadingJetPTPlot->Fill(jets[2].pT() / 1000);
+    if(jets.size() > 1) this->_dijetInvariantMassPlot->Fill(invariantMass(jets[0].momentum() + jets[1].momentum()) / 1000);
 
     //Invisibility and darkness
-    this->_leadingJetInvisiblePlot->Fill(pTInvisibility(jets[0]) * 100.0);
-    this->_subLeadingJetInvisiblePlot->Fill(pTInvisibility(jets[1]) * 100.0);
-    this->_thirdLeadingJetInvisiblePlot->Fill(pTInvisibility(jets[2]) * 100.0);
-    this->_leadingJetDarknessPlot->Fill(pTDarkness(jets[0]) * 100.0);
-    this->_subLeadingJetDarknessPlot->Fill(pTDarkness(jets[1]) * 100.0);
-    this->_thirdLeadingJetDarknessPlot->Fill(pTDarkness(jets[2]) * 100.0);
+    if(jets.size() > 0) this->_leadingJetInvisiblePlot->Fill(pTInvisibility(jets[0]) * 100.0);
+    if(jets.size() > 1) this->_subLeadingJetInvisiblePlot->Fill(pTInvisibility(jets[1]) * 100.0);
+    if(jets.size() > 2) this->_thirdLeadingJetInvisiblePlot->Fill(pTInvisibility(jets[2]) * 100.0);
+    if(jets.size() > 0) this->_leadingJetDarknessPlot->Fill(pTDarkness(jets[0]) * 100.0);
+    if(jets.size() > 1) this->_subLeadingJetDarknessPlot->Fill(pTDarkness(jets[1]) * 100.0);
+    if(jets.size() > 2) this->_thirdLeadingJetDarknessPlot->Fill(pTDarkness(jets[2]) * 100.0);
 
     //Jet multiplicity
     int jetMultiplicity = 0, darkJetMultiplicity20 = 0, darkJetMultiplicity50 = 0, darkJetMultiplicity80 = 0;
@@ -163,6 +261,28 @@ StatusCode DarkJetStudy::execute(){
 
 
 StatusCode DarkJetStudy::finalize(){
+    //Plot the response by invisibility and darkness
+    ANA_CHECK(this->book(TH1D(
+        "responseByInvisibility", ";Invisibility of truth jet (%);Average response",
+        this->_bins, 0.0, 100.0    //x bins, min x, max x
+    )));
+    TH1 *responseByInvisibilityPlot = this->hist("responseByInvisibility");
+    ANA_CHECK(this->book(TH1D(
+        "responseByDarkness", ";Darkness of truth jet (%);Average response",
+        this->_bins, 0.0, 100.0    //x bins, min x, max x
+    )));
+    TH1 *responseByDarknessPlot = this->hist("responseByDarkness");
+    for(int i = 0; i < this->_bins; i++){
+        if(this->_numberOfEventsByInvisibility[i] != 0){
+            responseByInvisibilityPlot->AddBinContent(i + 1, this->_responseSumByInvisibility[i] / this->_numberOfEventsByInvisibility[i]);
+        }
+        if(this->_numberOfEventsByDarkness[i] != 0){
+            responseByDarknessPlot->AddBinContent(i + 1, this->_responseSumByDarkness[i] / this->_numberOfEventsByDarkness[i]);
+        }
+    }
+
+    std::cout << "Average response: " << (this->_responseSum / this->_numberOfEventsWithResponse) << std::endl;
+
     //Plot the jet multiplicity
     const int maxMultiplicity = std::max_element(this->_jetMultiplicityData.begin(), this->_jetMultiplicityData.end(), [](const std::pair<int, int> &a, const std::pair<int, int> &b){return a.first < b.first;})->first;
     ANA_CHECK(this->book(TH1D(
