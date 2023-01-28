@@ -6,7 +6,9 @@ To set this up for the first time, download this folder to anywhere on lxplus, n
 ```
 mkdir build
 source setup
+cd build
 cmake ../source
+source */setup.sh
 ```
 
 ## Setup on each new terminal
