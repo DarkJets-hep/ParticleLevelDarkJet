@@ -1,4 +1,4 @@
-cd /eos/user/g/glindber/DarkJetStudies/build
+cd build
 setupATLAS
 asetup
 source */setup.sh
