@@ -12,25 +12,40 @@
 #include "dark-jet-studies/ParticleSort.hpp"
 #include "dark-jet-studies/Darkness.hpp"
 
-double DarkJetStudy::jetRadius = 1.0;
 std::regex DarkJetStudy::darkRegex("^49[0-9]{3}([013-9][0-9]|[0-9][0-24-9])$");
 
 DarkJetStudy::DarkJetStudy(const std::string& name, ISvcLocator *pSvcLocator):
     EL::AnaAlgorithm(name, pSvcLocator),
     _numEvents(0),
+    _jetRadiusTimes10(10),
     _efficiencyData(this->_deltaRBins + 1),
     _responseSum(0.0),
     _numberOfEventsWithResponse(0),
+
     _leadingJetPTPlot(nullptr),
     _subLeadingJetPTPlot(nullptr),
     _thirdLeadingJetPTPlot(nullptr),
     _dijetInvariantMassPlot(nullptr),
+
+    _cutLeadingJetPTPlot(nullptr),
+    _cutSubLeadingJetPTPlot(nullptr),
+    _cutThirdLeadingJetPTPlot(nullptr),
+    _cutDijetInvariantMassPlot(nullptr),
+
     _leadingJetInvisiblePlot(nullptr),
     _subLeadingJetInvisiblePlot(nullptr),
     _thirdLeadingJetInvisiblePlot(nullptr),
     _leadingJetDarknessPlot(nullptr),
     _subLeadingJetDarknessPlot(nullptr),
     _thirdLeadingJetDarknessPlot(nullptr),
+
+    _cutLeadingJetInvisiblePlot(nullptr),
+    _cutSubLeadingJetInvisiblePlot(nullptr),
+    _cutThirdLeadingJetInvisiblePlot(nullptr),
+    _cutLeadingJetLeptonPlot(nullptr),
+    _cutSubLeadingJetLeptonPlot(nullptr),
+    _cutThirdLeadingJetLeptonPlot(nullptr),
+
     _responsePlot(nullptr),
     _leadingEfficiencyPlot(nullptr),
     _subLeadingEfficiencyPlot(nullptr),
@@ -40,75 +55,154 @@ DarkJetStudy::DarkJetStudy(const std::string& name, ISvcLocator *pSvcLocator):
 
 StatusCode DarkJetStudy::initialize(){
     ANA_CHECK(this->book(TH1D(
-        "leadingJetPT", ";#it{p_{T}} of truth jet (GeV);Number of events",
+        "RecoTruthEfficiency_leadingJetPT", ";#it{p_{T}} of truth jet (GeV);Number of events",
         this->_bins, 0.0, this->_maxPT/2    //x bins, min x, max x
     )));
-    this->_leadingJetPTPlot = this->hist("leadingJetPT");
+    this->_leadingJetPTPlot = this->hist("RecoTruthEfficiency_leadingJetPT");
+
     ANA_CHECK(this->book(TH1D(
-        "subLeadingJetPT", ";#it{p_{T}} of truth jet (GeV);Number of events",
+        "RecoTruthEfficiency_subLeadingJetPT", ";#it{p_{T}} of truth jet (GeV);Number of events",
         this->_bins, 0.0, this->_maxPT/2    //x bins, min x, max x
     )));
-    this->_subLeadingJetPTPlot = this->hist("subLeadingJetPT");
+    this->_subLeadingJetPTPlot = this->hist("RecoTruthEfficiency_subLeadingJetPT");
+
     ANA_CHECK(this->book(TH1D(
-        "thirdLeadingJetPT", ";#it{p_{T}} of truth jet (GeV);Number of events",
+        "RecoTruthEfficiency_thirdLeadingJetPT", ";#it{p_{T}} of truth jet (GeV);Number of events",
         this->_bins, 0.0, this->_maxPT/2    //x bins, min x, max x
     )));
-    this->_thirdLeadingJetPTPlot = this->hist("thirdLeadingJetPT");
+    this->_thirdLeadingJetPTPlot = this->hist("RecoTruthEfficiency_thirdLeadingJetPT");
+
     ANA_CHECK(this->book(TH1D(
-        "dijetInvariantMass", ";Truth dijet invariant mass (GeV);Number of events",
+        "RecoTruthEfficiency_dijetInvariantMass", ";Truth dijet invariant mass (GeV);Number of events",
         this->_bins, 0.0, this->_maxPT    //x bins, min x, max x
     )));
-    this->_dijetInvariantMassPlot = this->hist("dijetInvariantMass");
+    this->_dijetInvariantMassPlot = this->hist("RecoTruthEfficiency_dijetInvariantMass");
+
+
     ANA_CHECK(this->book(TH1D(
-        "leadingJetInvisible", ";Invisibility of truth jet (%);Number of events",
+        "ModelCompare_leadingJetPT", ";#it{p_{T}} of leading truth jet (GeV);Number of events",
+        this->_bins, 0.0, this->_maxPT/2    //x bins, min x, max x
+    )));
+    this->_cutLeadingJetPTPlot = this->hist("ModelCompare_leadingJetPT");
+
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_subLeadingJetPT", ";#it{p_{T}} of subleading truth jet (GeV);Number of events",
+        this->_bins, 0.0, this->_maxPT/2    //x bins, min x, max x
+    )));
+    this->_cutSubLeadingJetPTPlot = this->hist("ModelCompare_subLeadingJetPT");
+
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_thirdLeadingJetPT", ";#it{p_{T}} of third leading truth jet (GeV);Number of events",
+        this->_bins, 0.0, this->_maxPT/2    //x bins, min x, max x
+    )));
+    this->_cutThirdLeadingJetPTPlot = this->hist("ModelCompare_thirdLeadingJetPT");
+
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_dijetInvariantMass", ";Truth dijet invariant mass (GeV);Number of events",
+        this->_bins, 0.0, this->_maxPT    //x bins, min x, max x
+    )));
+    this->_cutDijetInvariantMassPlot = this->hist("ModelCompare_dijetInvariantMass");
+
+
+    ANA_CHECK(this->book(TH1D(
+        "RecoTruthEfficiency_leadingJetInvisible", ";Invisibility of truth jet (%);Number of events",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
-    this->_leadingJetInvisiblePlot = this->hist("leadingJetInvisible");
+    this->_leadingJetInvisiblePlot = this->hist("RecoTruthEfficiency_leadingJetInvisible");
+
     ANA_CHECK(this->book(TH1D(
-        "subLeadingJetInvisible", ";Invisibility of truth jet (%);Number of events",
+        "RecoTruthEfficiency_subLeadingJetInvisible", ";Invisibility of truth jet (%);Number of events",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
-    this->_subLeadingJetInvisiblePlot = this->hist("subLeadingJetInvisible");
+    this->_subLeadingJetInvisiblePlot = this->hist("RecoTruthEfficiency_subLeadingJetInvisible");
+
     ANA_CHECK(this->book(TH1D(
-        "thirdLeadingJetInvisible", ";Invisibility of truth jet (%);Number of events",
+        "RecoTruthEfficiency_thirdLeadingJetInvisible", ";Invisibility of truth jet (%);Number of events",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
-    this->_thirdLeadingJetInvisiblePlot = this->hist("thirdLeadingJetInvisible");
+    this->_thirdLeadingJetInvisiblePlot = this->hist("RecoTruthEfficiency_thirdLeadingJetInvisible");
+
+
     ANA_CHECK(this->book(TH1D(
-        "leadingJetDarkness", ";Darkness of truth jet (%);Number of events",
+        "RecoTruthEfficiency_leadingJetDarkness", ";Darkness of truth jet (%);Number of events",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
-    this->_leadingJetDarknessPlot = this->hist("leadingJetDarkness");
+    this->_leadingJetDarknessPlot = this->hist("RecoTruthEfficiency_leadingJetDarkness");
+
     ANA_CHECK(this->book(TH1D(
-        "subLeadingJetDarkness", ";Darkness of truth jet (%);Number of events",
+        "RecoTruthEfficiency_subLeadingJetDarkness", ";Darkness of truth jet (%);Number of events",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
-    this->_subLeadingJetDarknessPlot = this->hist("subLeadingJetDarkness");
+    this->_subLeadingJetDarknessPlot = this->hist("RecoTruthEfficiency_subLeadingJetDarkness");
+
     ANA_CHECK(this->book(TH1D(
-        "thirdLeadingJetDarkness", ";Darkness of truth jet (%);Number of events",
+        "RecoTruthEfficiency_thirdLeadingJetDarkness", ";Darkness of truth jet (%);Number of events",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
-    this->_thirdLeadingJetDarknessPlot = this->hist("thirdLeadingJetDarkness");
+    this->_thirdLeadingJetDarknessPlot = this->hist("RecoTruthEfficiency_thirdLeadingJetDarkness");
+
+
     ANA_CHECK(this->book(TH1D(
-        "response", ";Response (Reconstruction jet #it{p_{T}} / Truth jet #it{p_{T}});Number of events",
+        "ModelCompare_leadingJetInvisible", ";Invisibility of leading truth jet (%);Number of events",
+        this->_bins, 0.0, 100.0    //x bins, min x, max x
+    )));
+    this->_cutLeadingJetInvisiblePlot = this->hist("ModelCompare_leadingJetInvisible");
+
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_subLeadingJetInvisible", ";Invisibility of subleading truth jet (%);Number of events",
+        this->_bins, 0.0, 100.0    //x bins, min x, max x
+    )));
+    this->_cutSubLeadingJetInvisiblePlot = this->hist("ModelCompare_subLeadingJetInvisible");
+
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_thirdLeadingJetInvisible", ";Invisibility third leading of truth jet (%);Number of events",
+        this->_bins, 0.0, 100.0    //x bins, min x, max x
+    )));
+    this->_cutThirdLeadingJetInvisiblePlot = this->hist("ModelCompare_thirdLeadingJetInvisible");
+
+
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_leadingJetLepton", ";Lepton fraction of leading truth jet (%);Number of events",
+        this->_bins, 0.0, 100.0    //x bins, min x, max x
+    )));
+    this->_cutLeadingJetLeptonPlot = this->hist("ModelCompare_leadingJetLepton");
+
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_subLeadingJetLepton", ";Lepton fraction of subleading truth jet (%);Number of events",
+        this->_bins, 0.0, 100.0    //x bins, min x, max x
+    )));
+    this->_cutSubLeadingJetLeptonPlot = this->hist("ModelCompare_subLeadingJetLepton");
+
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_thirdLeadingJetLepton", ";Lepton fraction of third truth jet (%);Number of events",
+        this->_bins, 0.0, 100.0    //x bins, min x, max x
+    )));
+    this->_cutThirdLeadingJetLeptonPlot = this->hist("ModelCompare_thirdLeadingJetLepton");
+
+
+    ANA_CHECK(this->book(TH1D(
+        "RecoTruthEfficiency_response", ";Response (Reconstruction jet #it{p_{T}} / Truth jet #it{p_{T}});Number of events",
         this->_bins, 0.0, this->_maxResponse    //x bins, min x, max x
     )));
-    this->_responsePlot = this->hist("response");
+    this->_responsePlot = this->hist("RecoTruthEfficiency_response");
+
     ANA_CHECK(this->book(TH1D(
-        "leadingEfficiency", ";#it{#Delta R};Number of events",
+        "RecoTruthEfficiency_leadingEfficiency", ";#it{#Delta R};Number of events",
         this->_deltaRBins, 0.0, this->_deltaRMax    //x bins, min x, max x
     )));
-    this->_leadingEfficiencyPlot = this->hist("leadingEfficiency");
+    this->_leadingEfficiencyPlot = this->hist("RecoTruthEfficiency_leadingEfficiency");
+
     ANA_CHECK(this->book(TH1D(
-        "subLeadingEfficiency", ";#it{#Delta R};Number of events",
+        "RecoTruthEfficiency_subLeadingEfficiency", ";#it{#Delta R};Number of events",
         this->_deltaRBins, 0.0, this->_deltaRMax    //x bins, min x, max x
     )));
-    this->_subLeadingEfficiencyPlot = this->hist("subLeadingEfficiency");
+    this->_subLeadingEfficiencyPlot = this->hist("RecoTruthEfficiency_subLeadingEfficiency");
+
     ANA_CHECK(this->book(TH1D(
-        "thirdLeadingEfficiency", ";#it{#Delta R};Number of events",
+        "RecoTruthEfficiency_thirdLeadingEfficiency", ";#it{#Delta R};Number of events",
         this->_deltaRBins, 0.0, this->_deltaRMax    //x bins, min x, max x
     )));
-    this->_thirdLeadingEfficiencyPlot = this->hist("thirdLeadingEfficiency");
+    this->_thirdLeadingEfficiencyPlot = this->hist("RecoTruthEfficiency_thirdLeadingEfficiency");
 
     return StatusCode::SUCCESS;
 }
@@ -120,8 +214,6 @@ StatusCode DarkJetStudy::execute(){
         std::cout << "Event " << this->_numEvents << std::endl;
     }
 
-    static const fastjet::JetDefinition antikt(fastjet::antikt_algorithm, jetRadius, fastjet::E_scheme, fastjet::Best);
-
     const xAOD::TruthParticleContainer *particles = nullptr;
     const xAOD::JetContainer *xAODRecoJets = nullptr;
     std::vector<fastjet::PseudoJet> recoJets;
@@ -131,6 +223,13 @@ StatusCode DarkJetStudy::execute(){
     if(this->evtStore()->retrieve(xAODRecoJets, "AntiKt10RCEMPFlowJets") == StatusCode::SUCCESS){
         std::cout.clear();
         //If the reconstruction jets are directly available, convert them to fastjet jets so that the type is always the same
+        for(const xAOD::Jet *jet: *xAODRecoJets){
+            recoJets.push_back(fastjet::PseudoJet(jet->px(), jet->py(), jet->pz(), jet->e()));
+        }
+    }
+    else if(this->evtStore()->retrieve(xAODRecoJets, "AntiKt4EMPFlowJets") == StatusCode::SUCCESS){
+        std::cout.clear();
+        this->_jetRadiusTimes10 = 4;
         for(const xAOD::Jet *jet: *xAODRecoJets){
             recoJets.push_back(fastjet::PseudoJet(jet->px(), jet->py(), jet->pz(), jet->e()));
         }
@@ -147,7 +246,7 @@ StatusCode DarkJetStudy::execute(){
                 recoJetParticles.push_back(fastjet::PseudoJet(particle->p4().X(), particle->p4().Y(), particle->p4().Z(), particle->e()));
             }
         }
-        const fastjet::ClusterSequence recoClustSeqAntikt(recoJetParticles, antikt);
+        const fastjet::ClusterSequence recoClustSeqAntikt(recoJetParticles, fastjet::JetDefinition(fastjet::antikt_algorithm, 1.0, fastjet::E_scheme, fastjet::Best));
         recoJets = sorted_by_pt(recoClustSeqAntikt.inclusive_jets(5000.0));
     }
     ANA_CHECK(this->evtStore()->retrieve(eventInfo, "EventInfo"));
@@ -167,7 +266,7 @@ StatusCode DarkJetStudy::execute(){
 
     //Manual jet building
     std::vector<Jet> jets;
-    const fastjet::ClusterSequence clustSeqAntikt(jetParticles, antikt);
+    const fastjet::ClusterSequence clustSeqAntikt(jetParticles, fastjet::JetDefinition(fastjet::antikt_algorithm, this->_jetRadiusTimes10 / 10.0, fastjet::E_scheme, fastjet::Best));
     const std::vector<fastjet::PseudoJet> pseudoJets = sorted_by_pt(clustSeqAntikt.inclusive_jets(5000.0));
     for(const fastjet::PseudoJet &jet: pseudoJets){
         jets.push_back(Jet(jet, particles));
@@ -236,7 +335,7 @@ StatusCode DarkJetStudy::execute(){
     //Jet multiplicity
     int jetMultiplicity = 0, darkJetMultiplicity20 = 0, darkJetMultiplicity50 = 0, darkJetMultiplicity80 = 0;
     for(const Jet &jet: jets){
-        if(jet.pT() < 30000){
+        if(jet.pT() < 100000){    //pT cut: 100 GeV
             break;
         }
         jetMultiplicity++;
@@ -256,6 +355,36 @@ StatusCode DarkJetStudy::execute(){
     this->_darkJetMultiplicity50Data[darkJetMultiplicity50]++;
     this->_darkJetMultiplicity80Data[darkJetMultiplicity80]++;
 
+    //Cut with >=2 dark jets, pT > 100 GeV, darkness >= 80%
+    if(darkJetMultiplicity80 >= 2){
+        const Jet *leadingTruthJet = nullptr, *subLeadingTruthJet = nullptr, *thirdLeadingTruthJet = nullptr;
+        for(const Jet &jet: jets){
+            if(jet.pT() < 100000 || pTDarkness(jet) < 0.8){
+                continue;
+            }
+            if(leadingTruthJet == nullptr) leadingTruthJet = &jet;
+            else if(subLeadingTruthJet == nullptr) subLeadingTruthJet = &jet;
+            else if(thirdLeadingTruthJet == nullptr){
+                thirdLeadingTruthJet = &jet;
+                break;
+            }
+        }
+
+        //pT and invariant mass
+        this->_cutLeadingJetPTPlot->Fill(leadingTruthJet->pT() / 1000);
+        this->_cutSubLeadingJetPTPlot->Fill(subLeadingTruthJet->pT() / 1000);
+        if(thirdLeadingTruthJet != nullptr) this->_cutThirdLeadingJetPTPlot->Fill(thirdLeadingTruthJet->pT() / 1000);
+        this->_cutDijetInvariantMassPlot->Fill(invariantMass(leadingTruthJet->momentum() + subLeadingTruthJet->momentum()) / 1000);
+
+        //Invisibility and lepton fraction
+        this->_cutLeadingJetInvisiblePlot->Fill(pTInvisibility(*leadingTruthJet) * 100.0);
+        this->_cutSubLeadingJetInvisiblePlot->Fill(pTInvisibility(*subLeadingTruthJet) * 100.0);
+        if(thirdLeadingTruthJet != nullptr) this->_cutThirdLeadingJetInvisiblePlot->Fill(pTInvisibility(*thirdLeadingTruthJet) * 100.0);
+        this->_cutLeadingJetLeptonPlot->Fill(pTLeptonFraction(*leadingTruthJet) * 100.0);
+        this->_cutSubLeadingJetLeptonPlot->Fill(pTLeptonFraction(*subLeadingTruthJet) * 100.0);
+        if(thirdLeadingTruthJet != nullptr) this->_cutThirdLeadingJetLeptonPlot->Fill(pTLeptonFraction(*thirdLeadingTruthJet) * 100.0);
+    }
+
     return StatusCode::SUCCESS;
 }
 
@@ -263,15 +392,15 @@ StatusCode DarkJetStudy::execute(){
 StatusCode DarkJetStudy::finalize(){
     //Plot the response by invisibility and darkness
     ANA_CHECK(this->book(TH1D(
-        "responseByInvisibility", ";Invisibility of truth jet (%);Average response",
+        "RecoTruthEfficiency_responseByInvisibility", ";Invisibility of truth jet (%);Average response",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
-    TH1 *responseByInvisibilityPlot = this->hist("responseByInvisibility");
+    TH1 *responseByInvisibilityPlot = this->hist("RecoTruthEfficiency_responseByInvisibility");
     ANA_CHECK(this->book(TH1D(
-        "responseByDarkness", ";Darkness of truth jet (%);Average response",
+        "RecoTruthEfficiency_responseByDarkness", ";Darkness of truth jet (%);Average response",
         this->_bins, 0.0, 100.0    //x bins, min x, max x
     )));
-    TH1 *responseByDarknessPlot = this->hist("responseByDarkness");
+    TH1 *responseByDarknessPlot = this->hist("RecoTruthEfficiency_responseByDarkness");
     for(int i = 0; i < this->_bins; i++){
         if(this->_numberOfEventsByInvisibility[i] != 0){
             responseByInvisibilityPlot->AddBinContent(i + 1, this->_responseSumByInvisibility[i] / this->_numberOfEventsByInvisibility[i]);
@@ -286,25 +415,25 @@ StatusCode DarkJetStudy::finalize(){
     //Plot the jet multiplicity
     const int maxMultiplicity = std::max_element(this->_jetMultiplicityData.begin(), this->_jetMultiplicityData.end(), [](const std::pair<int, int> &a, const std::pair<int, int> &b){return a.first < b.first;})->first;
     ANA_CHECK(this->book(TH1D(
-        "jetMultiplicity", ";Jet multiplicity;Number of events",
+        "RecoTruthEfficiency_jetMultiplicity", ";Jet multiplicity;Number of events",
         maxMultiplicity * 2 + 2, 0.0, maxMultiplicity + 1    //x bins, min x, max x
     )));
-    TH1 *jetMultiplicityPlot = this->hist("jetMultiplicity");
+    TH1 *jetMultiplicityPlot = this->hist("RecoTruthEfficiency_jetMultiplicity");
     ANA_CHECK(this->book(TH1D(
-        "darkJetMultiplicity20", ";Jet multiplicity;Number of events",
+        "RecoTruthEfficiency_darkJetMultiplicity20", ";Jet multiplicity;Number of events",
         maxMultiplicity * 2 + 2, 0.0, maxMultiplicity + 1    //x bins, min x, max x
     )));
-    TH1 *darkJetMultiplicity20Plot = this->hist("darkJetMultiplicity20");
+    TH1 *darkJetMultiplicity20Plot = this->hist("RecoTruthEfficiency_darkJetMultiplicity20");
     ANA_CHECK(this->book(TH1D(
-        "darkJetMultiplicity50", ";Jet multiplicity;Number of events",
+        "RecoTruthEfficiency_darkJetMultiplicity50", ";Jet multiplicity;Number of events",
         maxMultiplicity * 2 + 2, 0.0, maxMultiplicity + 1    //x bins, min x, max x
     )));
-    TH1 *darkJetMultiplicity50Plot = this->hist("darkJetMultiplicity50");
+    TH1 *darkJetMultiplicity50Plot = this->hist("RecoTruthEfficiency_darkJetMultiplicity50");
     ANA_CHECK(this->book(TH1D(
-        "darkJetMultiplicity80", ";Jet multiplicity;Number of events",
+        "RecoTruthEfficiency_darkJetMultiplicity80", ";Jet multiplicity;Number of events",
         maxMultiplicity * 2 + 2, 0.0, maxMultiplicity + 1    //x bins, min x, max x
     )));
-    TH1 *darkJetMultiplicity80Plot = this->hist("darkJetMultiplicity80");
+    TH1 *darkJetMultiplicity80Plot = this->hist("RecoTruthEfficiency_darkJetMultiplicity80");
 
     for(const auto &multiplicityEventsPair: this->_jetMultiplicityData){
         jetMultiplicityPlot->Fill(multiplicityEventsPair.first - 0.1, multiplicityEventsPair.second);
