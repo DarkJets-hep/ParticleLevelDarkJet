@@ -43,9 +43,6 @@ int main(int argc, char **argv){
                 return EXIT_FAILURE;
             }
         }
-        else if(arg == "-r" || arg == "--jet-radius"){
-            DarkJetStudy::jetRadius = std::stod(argv[++argi]);
-        }
         else if(arg == "-o" || arg == "--output"){
             outputFile = argv[++argi];
         }
@@ -58,8 +55,7 @@ int main(int argc, char **argv){
                 << "  -d, --dark-regex <regex>:          A regex that defines which PDG ID corresponds to a dark particle. Defaults to ^49[0-9]{3}([013-9][0-9]|[0-9][0-24-9])$, which matches any PDG ID in 49xxxxx, except 4900023 which is used for the Z' boson." << std::endl
                 << "  -h, --help:                        Show this help text and exit" << std::endl
                 << "  -n, --num-events <integer>:        Set the number of events to <integer>, defaults to 10" << std::endl
-                << "  -o, --output <path>:               Set the path of the output ROOT file to <path>, defaults to RecoTruthEfficiency.root" << std::endl
-                << "  -r, --jet-radius <float>:          Set the jet radius to <float>, defaults to 1.0" << std::endl;
+                << "  -o, --output <path>:               Set the path of the output ROOT file to <path>, defaults to RecoTruthEfficiency.root" << std::endl;
             return 0;
         }
         else{
@@ -133,3 +129,4 @@ int main(int argc, char **argv){
 
     return 0;
 }
+
