@@ -18,7 +18,7 @@
 inline TString modelName(const TString &fileName){
     const std::string stdFileName = fileName.Data();
     std::smatch modelNameMatches;
-    if(std::regex_search(stdFileName, modelNameMatches, std::regex("Model([A-Z]+)", std::regex_constants::ECMAScript | std::regex_constants::icase))){
+    if(std::regex_search(stdFileName, modelNameMatches, std::regex("Model([A-Z0-9]+)", std::regex_constants::ECMAScript | std::regex_constants::icase))){
         return modelNameMatches[1].str();
     }
     return "?";
