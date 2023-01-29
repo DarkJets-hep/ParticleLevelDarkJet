@@ -14,7 +14,6 @@ public:
     virtual StatusCode execute() override;
     virtual StatusCode finalize() override;
 
-    static double jetRadius;
     static std::regex darkRegex;
 
 private:
@@ -22,6 +21,7 @@ private:
     void plotHistograms(const std::vector<TH1D*> &histograms);
 
     int _numEvents;
+    int _jetRadiusTimes10;
 
     std::vector<double> _efficiencyData;
     std::map<int, int> _jetMultiplicityData;    //Contains the number of jets with pT > 30GeV as key, and the number of events with that key as value
@@ -37,6 +37,9 @@ private:
     static constexpr double _deltaRMax = 0.6;
     static constexpr double _maxResponse = 2.0;
     TH1 *_leadingJetPTPlot, *_subLeadingJetPTPlot, *_thirdLeadingJetPTPlot, *_dijetInvariantMassPlot;
+    TH1 *_cutLeadingJetPTPlot, *_cutSubLeadingJetPTPlot, *_cutThirdLeadingJetPTPlot, *_cutDijetInvariantMassPlot;
     TH1 *_leadingJetInvisiblePlot, *_subLeadingJetInvisiblePlot, *_thirdLeadingJetInvisiblePlot, *_leadingJetDarknessPlot, *_subLeadingJetDarknessPlot, *_thirdLeadingJetDarknessPlot;
+    TH1 *_cutLeadingJetInvisiblePlot, *_cutSubLeadingJetInvisiblePlot, *_cutThirdLeadingJetInvisiblePlot, *_cutLeadingJetLeptonPlot, *_cutSubLeadingJetLeptonPlot, *_cutThirdLeadingJetLeptonPlot;
     TH1 *_responsePlot, *_leadingEfficiencyPlot, *_subLeadingEfficiencyPlot, *_thirdLeadingEfficiencyPlot;
 };
+
