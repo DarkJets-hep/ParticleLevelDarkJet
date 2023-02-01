@@ -4,6 +4,8 @@
 #include <xAODJet/JetContainer.h>
 #include <xAODEventInfo/EventInfo.h>
 #include <xAODPFlow/FlowElementContainer.h>
+#include <xAODTracking/VertexContainer.h>
+#include <xAODTracking/TrackParticle.h>
 #include <fastjet/PseudoJet.hh>
 #include <fastjet/ClusterSequence.hh>
 #include "dark-jet-studies/DarkJetStudy.h"
@@ -236,6 +238,17 @@ StatusCode DarkJetStudy::execute(){
     }
     else{
         std::cout.clear();
+        //Find which particles to skip
+        const xAOD::VertexContainer* pVertices = nullptr;
+        ANA_CHECK(this->evtStore()->retrieve(pVertices, "PrimaryVertices"));
+        const xAOD::Vertex *vtxHS = nullptr;
+        for(const xAOD::Vertex *vertex: *pVertices){
+            if(vertex->vertexType() == xAOD::VxType::PriVtx){
+                vtxHS = vertex;
+                break;
+            }
+        }
+
         //If the reconstruction jets aren't directly available, build them from reconstruction particles
         const xAOD::FlowElementContainer *chargedParticles = nullptr, *neutralParticles = nullptr;
         ANA_CHECK(this->evtStore()->retrieve(chargedParticles, "JetETMissChargedParticleFlowObjects"));
@@ -243,6 +256,11 @@ StatusCode DarkJetStudy::execute(){
         std::vector<fastjet::PseudoJet> recoJetParticles;
         for(const xAOD::FlowElementContainer *container: {chargedParticles, neutralParticles}){
             for(const xAOD::FlowElement *particle: *container){
+                if(container == chargedParticles){
+                    const xAOD::TrackParticle *track = static_cast<const xAOD::TrackParticle*>(particle->chargedObjects().at(0));
+                    const double z0 = std::abs((track->z0() + track->vz() - vtxHS->z()) * sin(track->theta()));
+                    if(z0 > 2) continue;
+                }
                 recoJetParticles.push_back(fastjet::PseudoJet(particle->p4().X(), particle->p4().Y(), particle->p4().Z(), particle->e()));
             }
         }
