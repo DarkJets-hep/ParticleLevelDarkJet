@@ -13,8 +13,9 @@
 #include "dark-jet-studies/Jet.hpp"
 #include "dark-jet-studies/ParticleSort.hpp"
 #include "dark-jet-studies/Darkness.hpp"
+#include "dark-jet-studies/EventShapeObservables.hpp"
 
-std::regex DarkJetStudy::darkRegex("^49[0-9]{3}([013-9][0-9]|[0-9][0-24-9])$");
+std::regex DarkJetStudy::darkRegex("^490[0-9][1-9][0-9]{2}$");
 
 DarkJetStudy::DarkJetStudy(const std::string& name, ISvcLocator *pSvcLocator):
     EL::AnaAlgorithm(name, pSvcLocator),
@@ -51,7 +52,9 @@ DarkJetStudy::DarkJetStudy(const std::string& name, ISvcLocator *pSvcLocator):
     _responsePlot(nullptr),
     _leadingEfficiencyPlot(nullptr),
     _subLeadingEfficiencyPlot(nullptr),
-    _thirdLeadingEfficiencyPlot(nullptr)
+    _thirdLeadingEfficiencyPlot(nullptr),
+
+    _thrustPlot(nullptr)
 {}
 
 
@@ -206,6 +209,12 @@ StatusCode DarkJetStudy::initialize(){
     )));
     this->_thirdLeadingEfficiencyPlot = this->hist("RecoTruthEfficiency_thirdLeadingEfficiency");
 
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_thrust", ";Thrust;Number of events",
+        this->_bins, 0.0, 1.25    //x bins, min x, max x
+    )));
+    this->_thrustPlot = this->hist("ModelCompare_thrust");
+
     return StatusCode::SUCCESS;
 }
 
@@ -216,11 +225,11 @@ StatusCode DarkJetStudy::execute(){
         std::cout << "Event " << this->_numEvents << std::endl;
     }
 
-    const xAOD::TruthParticleContainer *particles = nullptr;
+    const xAOD::TruthParticleContainer *truthParticles = nullptr;
     const xAOD::JetContainer *xAODRecoJets = nullptr;
     std::vector<fastjet::PseudoJet> recoJets;
     const xAOD::EventInfo *eventInfo = nullptr;
-    ANA_CHECK(this->evtStore()->retrieve(particles, "TruthParticles"));
+    ANA_CHECK(this->evtStore()->retrieve(truthParticles, "TruthParticles"));
     std::cout.setstate(std::ios_base::failbit);
     if(this->evtStore()->retrieve(xAODRecoJets, "AntiKt10RCEMPFlowJets") == StatusCode::SUCCESS){
         std::cout.clear();
@@ -270,7 +279,7 @@ StatusCode DarkJetStudy::execute(){
     ANA_CHECK(this->evtStore()->retrieve(eventInfo, "EventInfo"));
 
     std::vector<fastjet::PseudoJet> jetParticles;
-    for(const xAOD::TruthParticle *particle: *particles){
+    for(const xAOD::TruthParticle *particle: *truthParticles){
         if(particle->status() != 1){    //If the particle is unstable
             continue;
         }
@@ -287,7 +296,7 @@ StatusCode DarkJetStudy::execute(){
     const fastjet::ClusterSequence clustSeqAntikt(jetParticles, fastjet::JetDefinition(fastjet::antikt_algorithm, this->_jetRadiusTimes10 / 10.0, fastjet::E_scheme, fastjet::Best));
     const std::vector<fastjet::PseudoJet> pseudoJets = sorted_by_pt(clustSeqAntikt.inclusive_jets(5000.0));
     for(const fastjet::PseudoJet &jet: pseudoJets){
-        jets.push_back(Jet(jet, particles));
+        jets.push_back(Jet(jet, truthParticles));
     }
 
     //Efficiency and response
@@ -372,6 +381,7 @@ StatusCode DarkJetStudy::execute(){
     this->_darkJetMultiplicity20Data[darkJetMultiplicity20]++;
     this->_darkJetMultiplicity50Data[darkJetMultiplicity50]++;
     this->_darkJetMultiplicity80Data[darkJetMultiplicity80]++;
+    this->_smJetMultiplicityData[jetMultiplicity - darkJetMultiplicity80]++;
 
     //Cut with >=2 dark jets, pT > 100 GeV, darkness >= 80%
     if(darkJetMultiplicity80 >= 2){
@@ -401,6 +411,9 @@ StatusCode DarkJetStudy::execute(){
         this->_cutLeadingJetLeptonPlot->Fill(pTLeptonFraction(*leadingTruthJet) * 100.0);
         this->_cutSubLeadingJetLeptonPlot->Fill(pTLeptonFraction(*subLeadingTruthJet) * 100.0);
         if(thirdLeadingTruthJet != nullptr) this->_cutThirdLeadingJetLeptonPlot->Fill(pTLeptonFraction(*thirdLeadingTruthJet) * 100.0);
+
+        //Event shape observables
+        this->_thrustPlot->Fill(thrust(truthParticles));
     }
 
     return StatusCode::SUCCESS;
@@ -452,10 +465,27 @@ StatusCode DarkJetStudy::finalize(){
         maxMultiplicity * 2 + 2, 0.0, maxMultiplicity + 1    //x bins, min x, max x
     )));
     TH1 *darkJetMultiplicity80Plot = this->hist("RecoTruthEfficiency_darkJetMultiplicity80");
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_jetMultiplicity", ";Total jet multiplicity;Number of events",
+        maxMultiplicity * 2 + 2, 0.0, maxMultiplicity + 1    //x bins, min x, max x
+    )));
+    TH1 *totalJetMultiplicityPlot = this->hist("ModelCompare_jetMultiplicity");
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_darkJetMultiplicity", ";Dark jet multiplicity;Number of events",
+        maxMultiplicity * 2 + 2, 0.0, maxMultiplicity + 1    //x bins, min x, max x
+    )));
+    TH1 *darkJetMultiplicityPlot = this->hist("ModelCompare_darkJetMultiplicity");
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_smJetMultiplicity", ";Standard Model jet multiplicity;Number of events",
+        maxMultiplicity * 2 + 2, 0.0, maxMultiplicity + 1    //x bins, min x, max x
+    )));
+    TH1 *smJetMultiplicityPlot = this->hist("ModelCompare_smJetMultiplicity");
 
     for(const auto &multiplicityEventsPair: this->_jetMultiplicityData){
         jetMultiplicityPlot->Fill(multiplicityEventsPair.first - 0.1, multiplicityEventsPair.second);
         jetMultiplicityPlot->Fill(multiplicityEventsPair.first + 0.1, multiplicityEventsPair.second);
+        totalJetMultiplicityPlot->Fill(multiplicityEventsPair.first - 0.1, multiplicityEventsPair.second);
+        totalJetMultiplicityPlot->Fill(multiplicityEventsPair.first + 0.1, multiplicityEventsPair.second);
     }
     for(const auto &multiplicityEventsPair: this->_darkJetMultiplicity20Data){
         darkJetMultiplicity20Plot->Fill(multiplicityEventsPair.first - 0.1, multiplicityEventsPair.second);
@@ -468,6 +498,12 @@ StatusCode DarkJetStudy::finalize(){
     for(const auto &multiplicityEventsPair: this->_darkJetMultiplicity80Data){
         darkJetMultiplicity80Plot->Fill(multiplicityEventsPair.first - 0.1, multiplicityEventsPair.second);
         darkJetMultiplicity80Plot->Fill(multiplicityEventsPair.first + 0.1, multiplicityEventsPair.second);
+        darkJetMultiplicityPlot->Fill(multiplicityEventsPair.first - 0.1, multiplicityEventsPair.second);
+        darkJetMultiplicityPlot->Fill(multiplicityEventsPair.first + 0.1, multiplicityEventsPair.second);
+    }
+    for(const auto &multiplicityEventsPair: this->_smJetMultiplicityData){
+        smJetMultiplicityPlot->Fill(multiplicityEventsPair.first - 0.1, multiplicityEventsPair.second);
+        smJetMultiplicityPlot->Fill(multiplicityEventsPair.first + 0.1, multiplicityEventsPair.second);
     }
 
     return StatusCode::SUCCESS;
