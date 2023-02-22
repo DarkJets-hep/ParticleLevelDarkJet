@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xAODTruth/TruthParticleContainer.h>
+#include <xAODTruth/TruthParticle.h>
 #include <fastjet/PseudoJet.hh>
 #include <vector>
 

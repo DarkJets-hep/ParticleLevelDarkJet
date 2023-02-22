@@ -24,8 +24,9 @@ private:
     int _jetRadiusTimes10;
 
     std::vector<double> _efficiencyData;
-    std::map<int, int> _jetMultiplicityData;    //Contains the number of jets with pT > 30GeV as key, and the number of events with that key as value
+    std::map<int, int> _jetMultiplicityData;    //Contains the number of jets with pT > 100GeV as key, and the number of events with that key as value
     std::map<int, int> _darkJetMultiplicity20Data, _darkJetMultiplicity50Data, _darkJetMultiplicity80Data;    //Same as above but only counts jets with darkness > 20% / 50% / 80%
+    std::map<int, int> _smJetMultiplicityData;
     double _responseSum;
     int _numberOfEventsWithResponse;
     std::map<int, double> _responseSumByInvisibility, _responseSumByDarkness;
@@ -41,5 +42,5 @@ private:
     TH1 *_leadingJetInvisiblePlot, *_subLeadingJetInvisiblePlot, *_thirdLeadingJetInvisiblePlot, *_leadingJetDarknessPlot, *_subLeadingJetDarknessPlot, *_thirdLeadingJetDarknessPlot;
     TH1 *_cutLeadingJetInvisiblePlot, *_cutSubLeadingJetInvisiblePlot, *_cutThirdLeadingJetInvisiblePlot, *_cutLeadingJetLeptonPlot, *_cutSubLeadingJetLeptonPlot, *_cutThirdLeadingJetLeptonPlot;
     TH1 *_responsePlot, *_leadingEfficiencyPlot, *_subLeadingEfficiencyPlot, *_thirdLeadingEfficiencyPlot;
+    TH1 *_thrustPlot;
 };
-
