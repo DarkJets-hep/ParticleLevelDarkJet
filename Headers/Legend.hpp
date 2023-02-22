@@ -55,16 +55,19 @@ static std::vector<std::unique_ptr<TObject>> drawLegend(const TH1D *histogram, c
     latex.SetTextSize(0.025);
     latex.SetTextAlign(12);    //Center vertically
 
-    std::unique_ptr<TPave> box(new TPave(TH1D_PAGE_COORDINATES4(0.7, 0.95 - legends.size() * 0.05, 1, 1)));
+    const double xOffset = (histogram->GetMaximumBin() > histogram->GetNbinsX() * 2 / 3) ? 0.05 : 0.65;
+    const double yOffset = -0.05;
+
+    std::unique_ptr<TPave> box(new TPave(TH1D_PAGE_COORDINATES4(xOffset, yOffset + 0.95 - legends.size() * 0.05, xOffset + 0.3, yOffset + 1)));
     box->Draw();
     objects.push_back(std::move(box));
 
     for(std::size_t i = 0; i < colors.size() + 1 && i < legends.size(); i++){
-        std::unique_ptr<TLine> line(new TLine(TH1D_PAGE_COORDINATES4(0.72, 0.95 - i * 0.05, 0.8, 0.95 - i * 0.05)));
+        std::unique_ptr<TLine> line(new TLine(TH1D_PAGE_COORDINATES4(xOffset + 0.02, yOffset + 0.95 - i * 0.05, xOffset + 0.1, yOffset + 0.95 - i * 0.05)));
         line->SetLineColor(i == 0 ? TH1D().GetLineColor() : colors[i - 1]);
         line->Draw();
         objects.push_back(std::move(line));
-        drawLatex(latex, histogram, 0.82, 0.95 - i * 0.05, "#bf{" + legends[i] + "}");
+        drawLatex(latex, histogram, xOffset + 0.12, yOffset + 0.95 - i * 0.05, "#bf{" + legends[i] + "}");
     }
 
     return objects;

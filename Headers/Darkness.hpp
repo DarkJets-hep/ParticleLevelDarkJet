@@ -8,7 +8,7 @@
 #include "../Headers/GetEnvVars.hpp"
 
 static bool isDark(const Rivet::Particle &particle){
-    static const std::regex darkParticleRegex(getStringFromEnvVar("DARK_REGEX", std::string("^49[0-9]{3}([013-9][0-9]|[0-9][0-24-9])$")));
+    static const std::regex darkParticleRegex(getStringFromEnvVar("DARK_REGEX", std::string("^490[0-9][1-9][0-9]{2}$")));
     return std::regex_search(std::to_string(particle.abspid()), darkParticleRegex);
 }
 
