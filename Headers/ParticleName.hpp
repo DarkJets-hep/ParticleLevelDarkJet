@@ -307,7 +307,7 @@ static std::string particleNameAsTLatex(int pdgid){
         case Rivet::PID::ANY: return "*";
 
         case 4900001: return "X'";
-        case 4900022: return "g_{D}";
+        case 4900021: return "g_{D}";
         case 4900022: return "#gamma'";
         case 4900023: return "Z'";
         case 4900101: return "q_{D}";
