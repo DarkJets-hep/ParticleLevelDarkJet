@@ -7,35 +7,32 @@
 #include "../Headers/ParticleSort.hpp"
 #include "../Headers/GetEnvVars.hpp"
 
-static bool isDark(const Rivet::Particle &particle){
-    static const std::regex darkParticleRegex(getStringFromEnvVar("DARK_REGEX", std::string("^490[0-9][1-9][0-9]{2}$")));
+static bool particleIsDark(const Rivet::Particle &particle){
+    static const std::regex darkParticleRegex(
+        getStringFromEnvVar(
+            //Allow to override the dark regex by setting an environment variable
+            "DARK_REGEX",
+            //Default regex that matches PDGIDs of dark particles
+            std::string("^490[0-9][1-9][0-9]{2}$")
+        )
+    );
     return std::regex_search(std::to_string(particle.abspid()), darkParticleRegex);
 }
 
-inline bool hasDarkAncestor(Rivet::Particle particle){
-    if(isDark(particle)){
+static bool hasDarkAncestor(Rivet::Particle particle){
+    if(particleIsDark(particle)){
         return true;
     }
     while(particle.parents().size() > 0){
         particle = particlesByEnergy(particle.parents())[0];
-        if(isDark(particle)){
+        if(particleIsDark(particle)){
             return true;
         }
     }
     return false;
 }
 
-inline double multiplicityDarkness(const Rivet::Jet &jet){
-    int result = 0;
-    for(const Rivet::Particle &particle: jet.particles()){
-        if(hasDarkAncestor(particle)){
-            result++;
-        }
-    }
-    return 1.0 * result / jet.particles().size();
-}
-
-inline double pTDarkness(const Rivet::Jet &jet){
+static double pTDarkness(const Rivet::Jet &jet){
     double result = 0.0;
     for(const Rivet::Particle &particle: jet.particles()){
         if(hasDarkAncestor(particle)){
@@ -45,7 +42,21 @@ inline double pTDarkness(const Rivet::Jet &jet){
     return std::min(result / jet.pT(), 1.0);
 }
 
-inline double multiplicityInvisibility(const Rivet::Jet &jet){
+static bool jetIsDark(const Rivet::Jet &jet){
+    return pTDarkness(jet) >= 0.8;
+}
+
+static double multiplicityDarkness(const Rivet::Jet &jet){
+    int result = 0;
+    for(const Rivet::Particle &particle: jet.particles()){
+        if(hasDarkAncestor(particle)){
+            result++;
+        }
+    }
+    return 1.0 * result / jet.particles().size();
+}
+
+static double multiplicityInvisibility(const Rivet::Jet &jet){
     int result = 0;
     for(const Rivet::Particle &particle: jet.particles()){
         if(!particle.isVisible()){
@@ -55,7 +66,7 @@ inline double multiplicityInvisibility(const Rivet::Jet &jet){
     return 1.0 * result / jet.particles().size();
 }
 
-inline double pTInvisibility(const Rivet::Jet &jet){
+static double pTInvisibility(const Rivet::Jet &jet){
     double result = 0.0;
     for(const Rivet::Particle &particle: jet.particles()){
         if(!particle.isStable()){
