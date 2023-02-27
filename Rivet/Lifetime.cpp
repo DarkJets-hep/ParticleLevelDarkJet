@@ -56,7 +56,7 @@ namespace Rivet{
                 const std::vector<double> &lifetimes = particleLifetimePair.second;
                 const double maxLifetime = *std::max_element(lifetimes.begin(), lifetimes.end());
                 TH1D plot(
-                    "", (";Lifetime of #it{" + absParticleNameAsTLatex(pdgid) + "} (unit? probably around 10^{-14}s);Number of particles").c_str(),
+                    "", (";Lifetime of #it{" + absParticleNameAsTLatex(pdgid) + "} (10^{-1} mm/c);Number of particles").c_str(),
                     this->_bins, 0.0, maxLifetime    //x bins, min x, max x
                 );
                 for(double lifetime: lifetimes){

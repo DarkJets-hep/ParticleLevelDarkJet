@@ -1,0 +1,6 @@
+#This file works to set it up both for the first time and later. To run this file, do `source setup`
+
+
+setupATLAS
+asetup 21.6.99,AthGeneration
+source setupRivet.sh

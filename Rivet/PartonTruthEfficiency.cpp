@@ -105,7 +105,7 @@ namespace Rivet{
                 "", ";Darkness of truth jet (%);Number of events",
                 this->_bins, 0.0, 100.0    //x bins, min x, max x
             ),
-            _resonancePdgId(getIntVectorFromEnvVar("RES_PDGID", std::vector<int>{4900023}))
+            _resonancePdgId(getIntVectorFromEnvVar("RES_PDGID", std::vector<int>{4900001, 4900023}))
         {
             this->_plotColor = static_cast<PlotColor>(getIntFromEnvVar("PLOT_COLOR", 1));
             if(this->_plotColor < 0 || this->_plotColor > 4){
@@ -180,7 +180,7 @@ namespace Rivet{
                 if(parton.pT() < this->_maxPT){
                     this->_partonPTPlot.Fill(parton.pT());
                     if(!this->_partonPTPlotByType.count(parton.abspid())){
-                        this->_partonPTPlotByType.insert({parton.abspid(), std::unique_ptr<TH1D>(new TH1D(
+                        this->_partonPTPlotByType.insert({parton.abspid(), std::shared_ptr<TH1D>(new TH1D(
                             "", (";#it{p_{T}}(#it{" + absParticleNameAsTLatex(parton.abspid()) + "}) (GeV);Number of events").c_str(),
                             this->_bins, 0.0, this->_maxPT    //x bins, min x, max x
                         ))});
@@ -231,7 +231,7 @@ namespace Rivet{
             //Jet multiplicity
             int jetMultiplicity = 0, darkJetMultiplicity20 = 0, darkJetMultiplicity50 = 0, darkJetMultiplicity80 = 0;
             for(const Jet &jet: jets){
-                if(jet.pT() < 30){
+                if(jet.pT() < 100){
                     break;
                 }
                 jetMultiplicity++;
@@ -255,7 +255,7 @@ namespace Rivet{
             Particles children, partons;
             for(Particle child: excitedQuark.children()){
                 children.push_back(child);
-                if(this->_plotSecondChildren && child.mass() > 10){
+                if(this->_plotSecondChildren && child.mass() > 50){
                     while(child.children().size() == 1){
                         child = child.children()[0];
                     }
@@ -361,7 +361,7 @@ namespace Rivet{
                 darkJetMultiplicity80Plot.Fill(multiplicityEventsPair.first - 0.1, multiplicityEventsPair.second);
                 darkJetMultiplicity80Plot.Fill(multiplicityEventsPair.first + 0.1, multiplicityEventsPair.second);
             }
-            this->plotHistograms({&jetMultiplicityPlot, &darkJetMultiplicity20Plot, &darkJetMultiplicity50Plot, &darkJetMultiplicity80Plot}, std::vector<TString>{"No darkness cut", "20% Darkness cut", "50% Darkness cut", "80% Darkness cut"}, ", p_{T} cut = 30 GeV");
+            this->plotHistograms({&jetMultiplicityPlot, &darkJetMultiplicity20Plot, &darkJetMultiplicity50Plot, &darkJetMultiplicity80Plot}, std::vector<TString>{"No darkness cut", "20% Darkness cut", "50% Darkness cut", "80% Darkness cut"}, ", p_{T} cut = 100 GeV");
 
             //Close the plot
             this->_canvas.Print(this->_pdf + "]");
@@ -516,20 +516,20 @@ namespace Rivet{
         static constexpr double _maxPT = 3e3;
         static constexpr double _maxResponse = 2.0;
         TH1D _partonPTPlot, _partonInvariantMassPlot, _jetResponsePlot, _fsResponsePlot, _fsInJetResponsePlot;
-        std::map<PdgId, std::unique_ptr<TH1D>> _partonPTPlotByType;
+        std::map<PdgId, std::shared_ptr<TH1D>> _partonPTPlotByType;
         TH1D _leadingJetPTPlot, _subLeadingJetPTPlot, _thirdLeadingJetPTPlot, _dijetInvariantMassPlot;
         TH1D _leadingJetInvisiblePlot, _subLeadingJetInvisiblePlot, _thirdLeadingJetInvisiblePlot, _leadingJetDarknessPlot, _subLeadingJetDarknessPlot, _thirdLeadingJetDarknessPlot;
 
         const std::vector<PdgId> _resonancePdgId;
-        static inline const std::vector<int> _lineColors{EColor::kOrange - 3, EColor::kGreen + 2, EColor::kMagenta + 2};
-        static inline const std::map<PlotColor, std::vector<int>> _particleColors{
+        const std::vector<int> _lineColors{EColor::kOrange - 3, EColor::kGreen + 2, EColor::kMagenta + 2};
+        const std::map<PlotColor, std::vector<int>> _particleColors{
             {PlotColor::PARTON, std::vector<int>{EColor::kRed, EColor::kBlue, EColor::kGreen + 2}},
             {PlotColor::JET, std::vector<int>{EColor::kRed, EColor::kBlue}},
             {PlotColor::CHARGE, std::vector<int>{EColor::kRed, EColor::kBlue + 1, EColor::kGreen + 1}},
             {PlotColor::TYPE, std::vector<int>{EColor::kBlue - 9, EColor::kMagenta + 2, EColor::kOrange, EColor::kGreen + 1, EColor::kRed, EColor::kPink + 7, EColor::kRed + 2}},
             {PlotColor::NONE, std::vector<int>{}}
         };
-        static inline const std::map<PlotColor, std::vector<TString>> _particleColorLegends{
+        const std::map<PlotColor, std::vector<TString>> _particleColorLegends{
             {PlotColor::PARTON, std::vector<TString>{"Leading parton & children", "Subleading parton & children", "Third leading parton & children"}},
             {PlotColor::JET, std::vector<TString>{"Leading jet", "Subleading jet"}},
             {PlotColor::CHARGE, std::vector<TString>{"Positive", "Neutral", "Negative"}},
