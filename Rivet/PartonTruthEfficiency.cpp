@@ -32,7 +32,7 @@ namespace Rivet{
             Analysis("PartonTruthEfficiency"),
             _numberOfPlots(0),
             _jetRadius(getDoubleFromEnvVar("JET_RADIUS", 1.0)),
-            _includeInvisibles(getIntFromEnvVar("INCLUDE_INVISIBLES", 0)),
+            _includeInvisibles(getIntFromEnvVar("INCLUDE_INVISIBLES", 1)),
             _pdf(getStringFromEnvVar("PDF_FILENAME", TString("../Outputs/PartonTruthEfficiency.pdf"))),
             _plotSecondChildren(getIntFromEnvVar("PLOT_SECOND_CHILDREN", 0)),
             _pTFlow(
