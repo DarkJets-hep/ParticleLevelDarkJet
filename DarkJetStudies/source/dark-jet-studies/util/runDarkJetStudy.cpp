@@ -52,7 +52,7 @@ int main(int argc, char **argv){
         else if(arg == "-h" || arg == "--help"){
             std::cout << "Usage: runDarkJetStudy [options] infile" << std::endl
                 << "Options:" << std::endl
-                << "  -d, --dark-regex <regex>:          A regex that defines which PDG ID corresponds to a dark particle. Defaults to ^49[0-9]{3}([013-9][0-9]|[0-9][0-24-9])$, which matches any PDG ID in 49xxxxx, except 4900023 which is used for the Z' boson." << std::endl
+                << "  -d, --dark-regex <regex>:          A regex that defines which PDG ID corresponds to a dark particle. Defaults to ^490[0-9][1-9][0-9]{2}$, which works for most models." << std::endl
                 << "  -h, --help:                        Show this help text and exit" << std::endl
                 << "  -n, --num-events <integer>:        Set the number of events to <integer>, defaults to 10" << std::endl
                 << "  -o, --output <path>:               Set the path of the output ROOT file to <path>, defaults to RecoTruthEfficiency.root" << std::endl;
