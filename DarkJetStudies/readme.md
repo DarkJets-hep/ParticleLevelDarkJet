@@ -31,7 +31,7 @@ cmake --build $TestArea
 
 After you've set up the environment and compiled the code as above, you can run it using the `runDarkJetStudy` command. The general syntax of this command is `runDarkJetStudy [options] inputfile`, where `inputfile` is the path of an AOD or DAOD file. The options are the following:
 
- - `-d <regex>`, `--dark-regex <regex>`: A regex that defines which PDG ID corresponds to a dark particle. Defaults to `^49[0-9]{3}([013-9][0-9]|[0-9][0-24-9])$`, which matches any PDG ID in 49xxxxx, except 4900023 which is used for the Z' boson.
+ - `-d <regex>`, `--dark-regex <regex>`: A regex that defines which PDG ID corresponds to a dark particle. Defaults to `^490[0-9][1-9][0-9]{2}$`, which works for most models.
  - `-h`, `--help`: Show this help text and exit
  - `-n <integer>`, `--num-events <integer>`: Set the number of events to `<integer>`, defaults to 10
  - `-o <path>`, `--output <path>`: Set the path of the output ROOT file to `<path>`, defaults to `RecoTruthEfficiency.root`
