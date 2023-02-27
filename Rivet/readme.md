@@ -19,24 +19,12 @@ OPTION1=value1 OPTION2=value2 ./CompileAndRun.sh <analysisName> <inputFile>
 
 `<inputFile>` is the path to an EVNT or HEPMC file. HEPMC files can be opened on any computer with Rivet and Root installed, EVNT files can only be opened on lxplus.
 
-For the options, all analyses have the `DARK_REGEX` option, which is a regex that defines which PDG ID corresponds to a dark particle. The default is `^490[0-9][1-9][0-9]{2}$` which works for most models.
+For the options, all analyses have the `DARK_REGEX` option, which is a regex that defines which PDG ID corresponds to a dark particle. The default is `^490[0-9][1-9][0-9]{2}$` which works for most models. The sign of the PDG ID is ignored, so this also matches negative PDG IDs.
 
-## Running the code
+In addition, the PartionTruthEfficiency analysis has the following options:
 
-After you've set up the environment and compiled the code as above, you can run it using the `runDarkJetStudy` command. The general syntax of this command is `runDarkJetStudy [options] inputfile`, where `inputfile` is the path of an AOD or DAOD file. The options are the following:
-
- - `-d <regex>`, `--dark-regex <regex>`: A regex that defines which PDG ID corresponds to a dark particle. Defaults to `^49[0-9]{3}([013-9][0-9]|[0-9][0-24-9])$`, which matches any PDG ID in 49xxxxx, except 4900023 which is used for the Z' boson.
- - `-h`, `--help`: Show this help text and exit
- - `-n <integer>`, `--num-events <integer>`: Set the number of events to `<integer>`, defaults to 10
- - `-o <path>`, `--output <path>`: Set the path of the output ROOT file to `<path>`, defaults to `RecoTruthEfficiency.root`
-
-The input file must be an AOD or DAOD file with the following contents:
-
-- `TruthParticles`
-- `EventInfo`
-- At least one of the following (they will be searched for in that order):
-    - `AntiKt10RCEMPFlowJets`
-    - `AntiKt4EMPFlowJets`
-    - Both `JetETMissChargedParticleFlowObjects` and `JetETMissNeutralParticleFlowObjects`
-
-To check the contents of an AOD or DAOD file, you can run `checkxAOD.py inputfile`.
+- `JET_RADIUS`: Defines the jet radius used to build jets. Defaults to `1.0`.
+- `INCLUDE_INVISIBLES`: `1` if invisibles should be included in the jet building (default), `0` if they shouldn't.
+- `PDF_FILENAME`: The path that the ouptut PDF file should be written to. Defaults to `../Outputs/PartonTruthEfficiency.pdf`.
+- `PLOT_SECOND_CHILDREN`: If the resonance particle decays into a particle with mass >= 50 GeV (for example if the X' boson emits a SM or dark gluon, which is equivalent to it decaying into a gluon and another X' boson with mass >= 50 GeV), determines whether to plot the children of that particle. `0` if they shouldn't be plotted (default), `1` if they should.
+- `RES_PDGID`: A comma-seperated list of PDG IDs to look for when looking for the resonance particle. Defaults to `4900001,4900023`, which looks for an X' boson or a Z' boson. This is sensitive to the sign, so `4900001` looks for an X' boson but not an anti-X' boson. To look for an anti-X' boson instead, use `-4900001`.
