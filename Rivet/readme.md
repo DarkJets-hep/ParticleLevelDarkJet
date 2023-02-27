@@ -12,7 +12,7 @@ source setup
 To compile and run the code, run CompileAndRun.sh with the following syntax:
 
 ```
-OPTION1=value1 OPTION2=value2 ./CompileAndRun.sh <analysisName> <inputFile>
+[OPTION1=value1 [OPTION2=value2 [...]]] ./CompileAndRun.sh <analysisName> <inputFile>
 ```
 
 `<analysisName>` is the name of the analysis you want to run (which corresponds to the name of the source file without `.cpp` at the end). If you're in another working directory than the source file, you can't specify the absolute path, you have to navigate to the same directory as the source file is in.
