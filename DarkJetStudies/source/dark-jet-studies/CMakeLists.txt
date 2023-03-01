@@ -9,7 +9,7 @@ find_package( ROOT COMPONENTS MathCore RIO Core Tree Hist Matrix Physics REQUIRE
 atlas_add_library (dark-jet-studies-lib
   dark-jet-studies/*.h Root/*.cpp
   PUBLIC_HEADERS dark-jet-studies
-  LINK_LIBRARIES xAODCore xAODBase xAODPFlow PathResolver xAODMetaData AsgAnalysisInterfaces AssociationUtilsLib 
+  LINK_LIBRARIES ${ROOT_LIBRARIES} xAODCore xAODBase xAODPFlow PathResolver xAODMetaData AsgAnalysisInterfaces AssociationUtilsLib 
   AnaAlgorithmLib EventLoop EventLoopGrid SampleHandler MCTruthClassifierLib PMGToolsLib xAODMissingET
   ${FASTJETCONTRIB_LIBRARIES} ${FASTJET_LIBRARIES}
   )
