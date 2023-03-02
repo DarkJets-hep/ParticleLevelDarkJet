@@ -16,6 +16,7 @@
 #include "dark-jet-studies/EventShapeObservables.hpp"
 
 std::regex DarkJetStudy::darkRegex("^490[0-9][1-9][0-9]{2}$");
+bool DarkJetStudy::pairJets = false;
 
 DarkJetStudy::DarkJetStudy(const std::string& name, ISvcLocator *pSvcLocator):
     EL::AnaAlgorithm(name, pSvcLocator),
@@ -54,7 +55,8 @@ DarkJetStudy::DarkJetStudy(const std::string& name, ISvcLocator *pSvcLocator):
     _subLeadingEfficiencyPlot(nullptr),
     _thirdLeadingEfficiencyPlot(nullptr),
 
-    _thrustPlot(nullptr)
+    _thrustPlot(nullptr),
+    _sphericityPlot(nullptr)
 {}
 
 
@@ -211,9 +213,15 @@ StatusCode DarkJetStudy::initialize(){
 
     ANA_CHECK(this->book(TH1D(
         "ModelCompare_thrust", ";Thrust;Number of events",
-        this->_bins, 0.0, 1.25    //x bins, min x, max x
+        this->_bins, 0.0, 1.0    //x bins, min x, max x
     )));
     this->_thrustPlot = this->hist("ModelCompare_thrust");
+
+    ANA_CHECK(this->book(TH1D(
+        "ModelCompare_sphericity", ";Sphericity;Number of events",
+        this->_bins, 0.0, 0.25    //x bins, min x, max x
+    )));
+    this->_sphericityPlot = this->hist("ModelCompare_sphericity");
 
     return StatusCode::SUCCESS;
 }
@@ -345,11 +353,53 @@ StatusCode DarkJetStudy::execute(){
         }
     }
 
-    //Jet pT and invariant mass
+    //Jet pT
     if(jets.size() > 0) this->_leadingJetPTPlot->Fill(jets[0].pT() / 1000);
     if(jets.size() > 1) this->_subLeadingJetPTPlot->Fill(jets[1].pT() / 1000);
     if(jets.size() > 2) this->_thirdLeadingJetPTPlot->Fill(jets[2].pT() / 1000);
-    if(jets.size() > 1) this->_dijetInvariantMassPlot->Fill(invariantMass(jets[0].momentum() + jets[1].momentum()) / 1000);
+
+    //Dijet invariant mass
+    const Jet *leadingJet = nullptr, *subLeadingJet = nullptr;
+    if(pairJets){
+        std::vector<const Jet*> smJets, darkJets;
+        for(const Jet &jet: jets){
+            if(pTDarkness(jet) < 0.8) smJets.push_back(&jet);
+            else darkJets.push_back(&jet);
+        }
+        if(smJets.size() > 1 && darkJets.size() > 1){
+            const double orderedMass0 = invariantMass(darkJets[0]->momentum() + smJets[0]->momentum());
+            const double orderedMass1 = invariantMass(darkJets[1]->momentum() + smJets[1]->momentum());
+            const double swappedMass0 = invariantMass(darkJets[0]->momentum() + smJets[1]->momentum());
+            const double swappedMass1 = invariantMass(darkJets[1]->momentum() + smJets[0]->momentum());
+            const auto assignJets = [&leadingJet, &subLeadingJet](const Jet *smJet, const Jet *darkJet){
+                if(darkJet->pT() > smJet->pT()){
+                    leadingJet = darkJet;
+                    subLeadingJet = smJet;
+                }
+                else{
+                    leadingJet = smJet;
+                    subLeadingJet = darkJet;
+                }
+            };
+            if(std::abs(orderedMass0 - orderedMass1) < std::abs(swappedMass0 - swappedMass1)){
+                assignJets(smJets[0], darkJets[0]);
+            }
+            else if(swappedMass0 > swappedMass1){
+                assignJets(smJets[1], darkJets[0]);
+            }
+            else{
+                assignJets(smJets[0], darkJets[1]);
+            }
+
+        }
+    }
+    else{
+        if(jets.size() > 0) leadingJet = &jets[0];
+        if(jets.size() > 1) subLeadingJet = &jets[1];
+    }
+    if(leadingJet != nullptr && subLeadingJet != nullptr){
+        this->_dijetInvariantMassPlot->Fill(invariantMass(leadingJet->momentum() + subLeadingJet->momentum()) / 1000);
+    }
 
     //Invisibility and darkness
     if(jets.size() > 0) this->_leadingJetInvisiblePlot->Fill(pTInvisibility(jets[0]) * 100.0);
@@ -402,7 +452,9 @@ StatusCode DarkJetStudy::execute(){
         this->_cutLeadingJetPTPlot->Fill(leadingTruthJet->pT() / 1000);
         this->_cutSubLeadingJetPTPlot->Fill(subLeadingTruthJet->pT() / 1000);
         if(thirdLeadingTruthJet != nullptr) this->_cutThirdLeadingJetPTPlot->Fill(thirdLeadingTruthJet->pT() / 1000);
-        this->_cutDijetInvariantMassPlot->Fill(invariantMass(leadingTruthJet->momentum() + subLeadingTruthJet->momentum()) / 1000);
+        if(leadingJet != nullptr && subLeadingJet != nullptr){    //Reuse the jets from before in case we want to pair SM jets with dark jets
+            this->_cutDijetInvariantMassPlot->Fill(invariantMass(leadingJet->momentum() + subLeadingJet->momentum()) / 1000);
+        }
 
         //Invisibility and lepton fraction
         this->_cutLeadingJetInvisiblePlot->Fill(pTInvisibility(*leadingTruthJet) * 100.0);
@@ -414,6 +466,7 @@ StatusCode DarkJetStudy::execute(){
 
         //Event shape observables
         this->_thrustPlot->Fill(thrust(truthParticles));
+        this->_sphericityPlot->Fill(sphericity(truthParticles));
     }
 
     return StatusCode::SUCCESS;
