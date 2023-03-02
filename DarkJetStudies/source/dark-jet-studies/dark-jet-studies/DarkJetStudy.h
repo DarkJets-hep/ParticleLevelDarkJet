@@ -15,6 +15,7 @@ public:
     virtual StatusCode finalize() override;
 
     static std::regex darkRegex;
+    static bool pairJets;
 
 private:
     void plotHistogram(TH1D &histogram);
@@ -42,5 +43,5 @@ private:
     TH1 *_leadingJetInvisiblePlot, *_subLeadingJetInvisiblePlot, *_thirdLeadingJetInvisiblePlot, *_leadingJetDarknessPlot, *_subLeadingJetDarknessPlot, *_thirdLeadingJetDarknessPlot;
     TH1 *_cutLeadingJetInvisiblePlot, *_cutSubLeadingJetInvisiblePlot, *_cutThirdLeadingJetInvisiblePlot, *_cutLeadingJetLeptonPlot, *_cutSubLeadingJetLeptonPlot, *_cutThirdLeadingJetLeptonPlot;
     TH1 *_responsePlot, *_leadingEfficiencyPlot, *_subLeadingEfficiencyPlot, *_thirdLeadingEfficiencyPlot;
-    TH1 *_thrustPlot;
+    TH1 *_thrustPlot, *_sphericityPlot;
 };

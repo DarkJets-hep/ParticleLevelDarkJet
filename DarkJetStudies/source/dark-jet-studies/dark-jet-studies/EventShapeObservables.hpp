@@ -1,6 +1,8 @@
 #pragma once
 
 #include <xAODTruth/TruthParticleContainer.h>
+#include <TMatrix.h>
+#include <TVector.h>
 #include <cmath>
 #include <vector>
 
@@ -12,7 +14,7 @@ inline double thrust(const xAOD::TruthParticleContainer *particles){
     double momentumSum = 0.0;
     std::vector<TVector3> momentums;
     for(const xAOD::TruthParticle *particle: *particles){
-        TVector3 momentum = particle->p4().Vect();
+        const TVector3 momentum = particle->p4().Vect();
         momentumSum += momentum.Mag();
         momentums.push_back(momentum);
     }
@@ -47,4 +49,29 @@ inline double thrust(const xAOD::TruthParticleContainer *particles){
         ts.push_back(t);
     }
     return *std::max_element(ts.begin(), ts.end()) / momentumSum;
+}
+
+inline double sphericity(const xAOD::TruthParticleContainer *particles){
+    if(particles->size() == 0){
+        return 0.0;
+    }
+
+    double momentumSum = 0.0;
+    TMatrix outerProductSum(3, 3);
+
+    for(const xAOD::TruthParticle *particle: *particles){
+        const TVector3 momentum = particle->p4().Vect();
+        momentumSum += momentum.Mag();
+        for(int i = 0; i < 3; i++){
+            for(int j = 0; j < 3; j++){
+                outerProductSum[i][j] += momentum[i] * momentum[j] / momentum.Mag();
+            }
+        }
+    }
+
+    outerProductSum *= 1 / momentumSum;    //It would have been easier to use /=, but for some reason they forgot to overload that operator
+
+    TVector eigenvalues(3);
+    outerProductSum.EigenVectors(eigenvalues);
+    return eigenvalues[2];
 }
