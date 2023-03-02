@@ -384,7 +384,15 @@ namespace Rivet{
 
     private:
         TString title(const TString &extraLabel = "") const{
-            return "Anti-#it{k_{t}}, #it{R} = " + std::regex_replace(std::to_string(this->_jetRadius), std::regex("([1-9]|\\.0)0+$"), "$1") + ", " + (this->_includeInvisibles ? "with" : "without") + " invisibles" + extraLabel + "\nModel " + modelName(this->_pdf) + ", Z' #rightarrow q_{D} #bar{q}_{D}";
+            const TString model = modelName(this->_pdf);
+            TString process;
+            if(model.BeginsWith("EJ")){
+                process = "X' #bar{X}' #rightarrow q #bar{q}_{D} #bar{q} q_{D}";
+            }
+            else{
+                process = "Z' #rightarrow q_{D} #bar{q}_{D}";
+            }
+            return "Anti-#it{k_{t}}, #it{R} = " + std::regex_replace(std::to_string(this->_jetRadius), std::regex("([1-9]|\\.0)0+$"), "$1") + ", " + (this->_includeInvisibles ? "with" : "without") + " invisibles" + extraLabel + "\nModel " + model + ", " + process;
         }
 
         void plotHistogram(TH1D &histogram){
