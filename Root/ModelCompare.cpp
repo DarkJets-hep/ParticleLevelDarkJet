@@ -77,8 +77,6 @@ int main(int argc, char **argv){
         std::sort(plotGroup.begin(), plotGroup.end(), [](const std::pair<TString, TH1D*> &a, const std::pair<TString, TH1D*> &b){
             return a.second->GetMaximum() > b.second->GetMaximum();
         });
-        TString jetRadius;
-        std::vector<TString> models;
         for(std::size_t i = 0; i < plotGroup.size(); i++){
             TH1D *histogram = plotGroup[i].second;
             if(i == 0){
@@ -88,6 +86,8 @@ int main(int argc, char **argv){
                 histogram->Draw("histsame");
             }
         }
+        TString jetRadius, process;
+        std::vector<TString> models;
         for(const auto &s: p.second){
             const TString model = s.first;
             if(model.BeginsWith("EJ")){
@@ -95,16 +95,18 @@ int main(int argc, char **argv){
                     std::cout << "Warning: mixing jet radiuses: EJ models have jet radius 0.4, others have jet radius 1.0.";
                 }
                 jetRadius = "0.4";
+                process = "X' #bar{X}' #rightarrow q #bar{q}_{D} #bar{q} q_{D}";
             }
             else{
                 if(jetRadius == "0.4"){
                     std::cout << "Warning: mixing jet radiuses: EJ models have jet radius 0.4, others have jet radius 1.0.";
                 }
                 jetRadius = "1.0";
+                process = "Z' #rightarrow q_{D} #bar{q}_{D}";
             }
             models.push_back("Model " + model);
         }
-        drawTitle(plotGroup[0].second, "Anti-#it{k_{t}}, #it{R} = " + jetRadius + ", with invisibles, p_{T} cut = 100 GeV\nZ' #rightarrow q_{D} #bar{q}_{D}");
+        drawTitle(plotGroup[0].second, "Anti-#it{k_{t}}, #it{R} = " + jetRadius + ", with invisibles, p_{T} cut = 100 GeV, Darkness cut = 80%\n" + process);
         const auto legend = drawLegend(plotGroup[0].second, colors, models);
         canvas.Print(outfile);
     }

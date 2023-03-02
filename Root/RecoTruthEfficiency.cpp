@@ -93,7 +93,14 @@ int main(int argc, char **argv){
             }
         }
         const TString model = modelName(infile);
-        drawTitle(plotGroup[0], "Anti-#it{k_{t}}, #it{R} = " + TString(model.BeginsWith("EJ") ? "0.4" : "1.0") + ", with invisibles" + TString(plotGroup.size() > 3 ? ", p_{T} cut = 100 GeV" : "") + "\nModel " + model + ", Z' #rightarrow q_{D} #bar{q}_{D}");
+        TString process;
+        if(model.BeginsWith("EJ")){
+            process = "X' #bar{X}' #rightarrow q #bar{q}_{D} #bar{q} q_{D}";
+        }
+        else{
+            process = "Z' #rightarrow q_{D} #bar{q}_{D}";
+        }
+        drawTitle(plotGroup[0], "Anti-#it{k_{t}}, #it{R} = " + TString(model.BeginsWith("EJ") ? "0.4" : "1.0") + ", with invisibles" + TString(plotGroup.size() > 3 ? ", p_{T} cut = 100 GeV" : "") + "\nModel " + model + ", " + process);
         if(plotGroup.size() > 1){
             const auto legend = drawLegend(plotGroup[0], colors, plotGroup.size() == 3 ? std::vector<TString>{"Leading jet", "Subleading jet", "Third leading jet"} : std::vector<TString>{"No darkness cut", "20% Darkness cut", "50% Darkness cut", "80% Darkness cut"});
             canvas.Print(outfile);    //Repeat this both in if and else blocks so that the legend doesn't go out of scope
