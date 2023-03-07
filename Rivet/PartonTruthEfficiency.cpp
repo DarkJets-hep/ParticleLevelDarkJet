@@ -321,7 +321,7 @@ namespace Rivet{
             this->_pTFlow.Draw("axis same");
             drawTitle(&this->_pTFlow, this->title());
             const std::vector<TString> &legends = this->_particleColorLegends.at(this->_plotColor);
-            const auto legend = drawLegend(&this->_pTFlow, this->_particleColors.at(this->_plotColor), (this->_plotColor == PlotColor::PARTON && !this->_plotSecondChildren) ? (this->_plotSecondChildren == 1 ? std::vector<TString>(legends.begin(), legends.end() - 1) : std::vector<TString>{EColor::kOrange + 7, EColor::kAzure + 9}) : legends);
+            const auto legend = drawLegend(&this->_pTFlow, (this->_plotColor == PlotColor::PARTON && this->_plotSecondChildren == 2) ? std::vector<int>{EColor::kOrange + 7, EColor::kAzure + 9} : this->_particleColors.at(this->_plotColor), (this->_plotColor == PlotColor::PARTON && this->_plotSecondChildren != 1) ? std::vector<TString>(legends.begin(), legends.end() - 1) : legends);
             this->_canvas.Print(this->_pdf);
         }
 
