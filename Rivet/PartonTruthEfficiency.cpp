@@ -128,6 +128,7 @@ namespace Rivet{
             //Find the excited quark
             const FinalState &cnfs = this->apply<FinalState>(event, "FS");
             const Jets &jets = this->apply<FastJets>(event, "Jets").jetsByPt();
+            const Jets &leadingJets = (this->_plotSecondChildren == 2) ? Jets{jets[0], jets[1], jets[2], jets[3]} : Jets{jets[0], jets[1]};
             Particle excitedQuark;
             for(const Particle &particle: event.allParticles()){
                 if(std::find(this->_resonancePdgId.begin(), this->_resonancePdgId.end(), particle.pid()) != this->_resonancePdgId.end()){
@@ -138,6 +139,12 @@ namespace Rivet{
             if(excitedQuark.pid() == PID::ANY){
                 std::cout << "Resonance particle not found." << std::endl;
                 return;
+            }
+            if(this->_plotSecondChildren == 2){
+                const int previousPdgId = excitedQuark.pid();
+                while(excitedQuark.pid() == previousPdgId){
+                    excitedQuark = excitedQuark.parents()[0];
+                }
             }
             while(excitedQuark.children().size() == 1){
                 excitedQuark = excitedQuark.children()[0];
@@ -151,7 +158,7 @@ namespace Rivet{
             for(const Particle &parton: excitedQuark.children()){
                 double deltaR = 1e6;    //Start with something that's guaranteed to be much larger than the actual deltaR
                 Jet jet;
-                for(const Jet &newJet: {jets[0], jets[1]}){
+                for(const Jet &newJet: leadingJets){
                     const double deltaY = parton.rapidity() - newJet.rapidity();
                     double deltaPhi = parton.phi() - newJet.phi();
                     if(deltaPhi < -M_PI) deltaPhi += 2 * M_PI;
@@ -252,24 +259,24 @@ namespace Rivet{
             this->_darkJetMultiplicity80Data[darkJetMultiplicity80]++;
 
             //Find the children of the particle
-            Particles children, partons;
+            Particles plottedPartonLevelParticles, finalPartonLevelParticles;
             for(Particle child: excitedQuark.children()){
-                children.push_back(child);
+                plottedPartonLevelParticles.push_back(child);
                 if(this->_plotSecondChildren && child.mass() > 50){
                     while(child.children().size() == 1){
                         child = child.children()[0];
                     }
                     const Particles secondChildren = child.children();
-                    partons.insert(partons.end(), secondChildren.begin(), secondChildren.end());
-                    children.insert(children.end(), secondChildren.begin(), secondChildren.end());
+                    finalPartonLevelParticles.insert(finalPartonLevelParticles.end(), secondChildren.begin(), secondChildren.end());
+                    plottedPartonLevelParticles.insert(plottedPartonLevelParticles.end(), secondChildren.begin(), secondChildren.end());
                 }
                 else{
-                    partons.push_back(child);
+                    finalPartonLevelParticles.push_back(child);
                 }
             }
 
             //Only plot the 10 events of each kind, but allow 20 events for decay modes that can be more interesting (W- or Z-bosons since they can decay further)
-            if(this->_decays[excitedQuark.pid()][Decay::fromParent(excitedQuark)] > (partons.size() == 2 ? 10 : 20)){
+            if(this->_decays[excitedQuark.pid()][Decay::fromParent(excitedQuark)] > (finalPartonLevelParticles.size() == 2 ? 10 : 20)){
                 return;
             }
 
@@ -279,7 +286,11 @@ namespace Rivet{
             this->_pTFlow.SetStats(0);
 
             //Plot the jets
-            const auto jetPolygons = plotJets({jets[0], jets[1]}, this->_jetRadius, {particleColor(jets[0], jets, partons), particleColor(jets[1], jets, partons)});
+            std::vector<int> jetColors;
+            for(const Jet &jet: leadingJets){
+                jetColors.push_back(particleColor(jet, jets, finalPartonLevelParticles));
+            }
+            const auto jetPolygons = plotJets(leadingJets, this->_jetRadius, jetColors);
 
             //Plot the stable particles
             for(const Particle &finalParticle: cnfs.particles()){
@@ -292,20 +303,25 @@ namespace Rivet{
                         marker = 25;
                     }
                 }
-                plotParticle(finalParticle, marker, particleColor(finalParticle, jets, partons), false, 0.3);
+                plotParticle(finalParticle, marker, particleColor(finalParticle, jets, finalPartonLevelParticles), false, 0.3);
             }
 
             //Plot the excited quark and its decay products
-            plotParticle(excitedQuark, 29);
-            for(const Particle &child: children){
-                plotParticle(child, 20, this->_plotColor == PlotColor::PARTON ? particleColor(child, jets, partons) : EColor::kBlack);
+            if(this->_plotSecondChildren != 2){
+                plotParticle(excitedQuark, 29);
+            }
+            for(const Particle &particle: plottedPartonLevelParticles){
+                const bool isXPrimeBoson = this->_plotSecondChildren == 2 && std::find_if(finalPartonLevelParticles.begin(), finalPartonLevelParticles.end(), [&particle](const Particle &parton){
+                    return particle.isSame(parton);
+                }) == finalPartonLevelParticles.end();
+                plotParticle(particle, isXPrimeBoson ? 29 : 20, this->_plotColor == PlotColor::PARTON ? particleColor(particle, jets, finalPartonLevelParticles) : EColor::kBlack);
             }
 
             //Print the page
             this->_pTFlow.Draw("axis same");
             drawTitle(&this->_pTFlow, this->title());
             const std::vector<TString> &legends = this->_particleColorLegends.at(this->_plotColor);
-            const auto legend = drawLegend(&this->_pTFlow, this->_particleColors.at(this->_plotColor), (this->_plotColor == PlotColor::PARTON && !this->_plotSecondChildren) ? std::vector<TString>(legends.begin(), legends.end() - 1) : legends);
+            const auto legend = drawLegend(&this->_pTFlow, this->_particleColors.at(this->_plotColor), (this->_plotColor == PlotColor::PARTON && !this->_plotSecondChildren) ? (this->_plotSecondChildren == 1 ? std::vector<TString>(legends.begin(), legends.end() - 1) : std::vector<TString>{EColor::kOrange + 7, EColor::kAzure + 9}) : legends);
             this->_canvas.Print(this->_pdf);
         }
 
@@ -430,25 +446,54 @@ namespace Rivet{
             return false;
         }
 
-        int particleColor(const ParticleBase &particleOrJet, const Jets &jets, const Particles &partons){
+        int particleColor(const ParticleBase &particleOrJet, const Jets &jets, const Particles &finalPartonLevelParticles){
             const Particle *particle = dynamic_cast<const Particle*>(&particleOrJet);
             const Jet *jet = dynamic_cast<const Jet*>(&particleOrJet);
-            const std::vector<int> &colors = this->_particleColors.at(this->_plotColor);
+            std::vector<int> colors = this->_particleColors.at(this->_plotColor);
             switch(this->_plotColor){
             case PlotColor::PARTON:
-                for(Particle parentParticle: (jet ? particlesByEnergy(jet->particles()) : Particles{*particle})){
-                    while(parentParticle.parents().size() > 0){
-                        for(unsigned int i = 0; i < partons.size() && i < colors.size(); i++){
-                            if(parentParticle.isSame(particlesByEnergy(partons)[i])){
-                                return colors[i] + (jet ? -9 : 0);
+                {
+                    const Particles sortedFinalPartonLevelParticles = particlesByEnergy(finalPartonLevelParticles);
+                    if(this->_plotSecondChildren == 2){
+                        if(sortedFinalPartonLevelParticles.size() >= 4){
+                            colors.erase(colors.begin() + 2);
+                            if(sortedFinalPartonLevelParticles[0].parents()[0].isSame(sortedFinalPartonLevelParticles[3].parents()[0]) && sortedFinalPartonLevelParticles[1].parents()[0].isSame(sortedFinalPartonLevelParticles[2].parents()[0])){
+                                std::iter_swap(colors.begin() + 2, colors.begin() + 3);
+                            }
+                            else if(sortedFinalPartonLevelParticles[0].parents()[0].isSame(sortedFinalPartonLevelParticles[1].parents()[0]) && sortedFinalPartonLevelParticles[2].parents()[0].isSame(sortedFinalPartonLevelParticles[3].parents()[0])){
+                                std::iter_swap(colors.begin() + 1, colors.begin() + 2);
                             }
                         }
-                        parentParticle = particlesByEnergy(parentParticle.parents())[0];
+                    }
+                    for(Particle parentParticle: (jet ? particlesByEnergy(jet->particles()) : Particles{*particle})){
+                        while(parentParticle.parents().size() > 0){
+                            for(unsigned int i = 0; i < sortedFinalPartonLevelParticles.size() && i < colors.size(); i++){
+                                Particle parton = sortedFinalPartonLevelParticles[i];
+                                if(parentParticle.isSame(parton)){
+                                    return colors[i] + (jet ? (colors[i] == EColor::kOrange - 3 ? -1 : -9) : 0);
+                                }
+                            }
+                            parentParticle = particlesByEnergy(parentParticle.parents())[0];
+                        }
+                    }
+                    if(this->_plotSecondChildren == 2 && particle != nullptr){
+                        Particle currentParticle = *particle;
+                        while(currentParticle.children().size() == 1){
+                            currentParticle = currentParticle.children()[0];
+                        }
+                        if(sortedFinalPartonLevelParticles[0].parents()[0].isSame(currentParticle)){
+                            return EColor::kOrange + 7;
+                        }
+                        else for(const Particle &finalPartonLevelParticle: sortedFinalPartonLevelParticles){
+                            if(finalPartonLevelParticle.parents()[0].isSame(currentParticle)){
+                                return EColor::kAzure + 9;
+                            }
+                        }
                     }
                 }
                 break;
             case PlotColor::JET:
-                for(const std::pair<Jet, int> &jetColorPair: std::vector<std::pair<Jet, int>>{{jets[0], colors[0]}, {jets[1], colors[1]}}){
+                for(const std::pair<Jet, int> &jetColorPair: this->_plotSecondChildren == 2 ? std::vector<std::pair<Jet, int>>{{jets[0], colors[0]}, {jets[1], colors[1]}, {jets[2], colors[2]}, {jets[3], colors[3]}} : std::vector<std::pair<Jet, int>>{{jets[0], colors[0]}, {jets[1], colors[1]}}){
                     if(jet != nullptr && jet->size() == jetColorPair.first.size() && jet->momentum() == jetColorPair.first.momentum()){
                         return jetColorPair.second - 9;
                     }
@@ -507,7 +552,7 @@ namespace Rivet{
         const double _jetRadius;
         const bool _includeInvisibles;
         const TString _pdf;
-        const bool _plotSecondChildren;
+        const int _plotSecondChildren;
         TCanvas _canvas;
         TH2D _pTFlow;
 
@@ -531,8 +576,8 @@ namespace Rivet{
         const std::vector<PdgId> _resonancePdgId;
         const std::vector<int> _lineColors{EColor::kOrange - 3, EColor::kGreen + 2, EColor::kMagenta + 2};
         const std::map<PlotColor, std::vector<int>> _particleColors{
-            {PlotColor::PARTON, std::vector<int>{EColor::kRed, EColor::kBlue, EColor::kGreen + 2}},
-            {PlotColor::JET, std::vector<int>{EColor::kRed, EColor::kBlue}},
+            {PlotColor::PARTON, std::vector<int>{EColor::kRed, EColor::kBlue, EColor::kGreen + 2, EColor::kOrange - 3, EColor::kCyan + 2}},
+            {PlotColor::JET, std::vector<int>{EColor::kRed, EColor::kBlue, EColor::kGreen + 2, EColor::kMagenta + 2}},
             {PlotColor::CHARGE, std::vector<int>{EColor::kRed, EColor::kBlue + 1, EColor::kGreen + 1}},
             {PlotColor::TYPE, std::vector<int>{EColor::kBlue - 9, EColor::kMagenta + 2, EColor::kOrange, EColor::kGreen + 1, EColor::kRed, EColor::kPink + 7, EColor::kRed + 2}},
             {PlotColor::NONE, std::vector<int>{}}
