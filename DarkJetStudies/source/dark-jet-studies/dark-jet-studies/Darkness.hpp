@@ -8,7 +8,7 @@
 #include "dark-jet-studies/ParticleUtils.hpp"
 #include "dark-jet-studies/Jet.hpp"
 
-static bool isDark(const xAOD::TruthParticle *particle){
+static bool particleIsDark(const xAOD::TruthParticle *particle){
     return std::regex_search(std::to_string(particle->absPdgId()), DarkJetStudy::darkRegex);
 }
 
@@ -17,12 +17,12 @@ inline bool isLepton(const xAOD::TruthParticle *particle){
 }
 
 inline bool hasDarkAncestor(const xAOD::TruthParticle *particle){
-    if(isDark(particle)){
+    if(particleIsDark(particle)){
         return true;
     }
     while(parents(particle).size() > 0){
         particle = particlesByEnergy(parents(particle))[0];
-        if(isDark(particle)){
+        if(particleIsDark(particle)){
             return true;
         }
     }
@@ -47,6 +47,10 @@ inline double pTDarkness(const Jet &jet){
         }
     }
     return std::min(result / jet.pT(), 1.0);
+}
+
+inline bool jetIsDark(const Jet &jet){
+    return pTDarkness(jet) >= 0.8;
 }
 
 inline double multiplicityInvisibility(const Jet &jet){

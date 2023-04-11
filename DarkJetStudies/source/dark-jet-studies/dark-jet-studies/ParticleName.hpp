@@ -151,12 +151,18 @@ static std::string particleName(int pdgid){
         case Rivet::PID::URANIUM: return "URANIUM";
         case Rivet::PID::ANY: return "*";
 
+        case 4900001: return "XPRIME_BOSON";
+        case 4900021: return "DARK_GLUON";
+        case 4900022: return "DARK_PHOTON";
         case 4900023: return "ZPRIMEBOSON";
-        case 4900101: return "DARK_QUARK";
+        case -4900101: return "DARK_QUARK";
+        case 4900101: return "DARK_ANTIQUARK";
         case 4900111: return "DARK_PION";
         case 4900113: return "DARK_RHO_MESON";
-        case 4900211: return "DARK_KAON";
-        case 4900213: return "DARK_KSTAR";
+        case -4900211: return "DARK_PI_PLUS";
+        case 4900211: return "DARK_PI_MINUS";
+        case -4900213: return "DARK_RHO_PLUS";
+        case 4900213: return "DARK_RHO_MINUS";
     }
 
     if(pdgid < 0){
@@ -303,12 +309,18 @@ static std::string particleNameAsTLatex(int pdgid){
         case 5503: return "bb";
         case Rivet::PID::ANY: return "*";
 
+        case 4900001: return "X'";
+        case 4900021: return "g_{D}";
+        case 4900022: return "#gamma'";
         case 4900023: return "Z'";
-        case 4900101: return "q_{D}";
-        case 4900111: return "#pi_{D}";
-        case 4900113: return "#rho_{D}";
-        case 4900211: return "K_{D}";
-        case 4900213: return "K*_{D}";
+        case -4900101: return "q_{D}";
+        case 4900101: return "#bar{q}_{D}";
+        case 4900111: return "#pi_{D}^{\"0\"}";
+        case 4900113: return "#rho_{D}^{\"0\"}";
+        case -4900211: return "#pi_{D}^{\"+\"}";
+        case 4900211: return "#pi_{D}^{\"-\"}";
+        case -4900213: return "#rho_{D}^{\"+\"}";
+        case 4900213: return "#rho_{D}^{\"-\"}";
     }
 
     if(pdgid < 0){

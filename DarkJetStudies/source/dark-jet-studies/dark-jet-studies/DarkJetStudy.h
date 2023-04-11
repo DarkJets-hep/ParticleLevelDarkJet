@@ -38,7 +38,7 @@ private:
     static constexpr int _deltaRBins = 12;
     static constexpr double _deltaRMax = 0.6;
     static constexpr double _maxResponse = 2.0;
-    TH1 *_leadingJetPTPlot, *_subLeadingJetPTPlot, *_thirdLeadingJetPTPlot, *_dijetInvariantMassPlot;
+    TH1 *_leadingJetPTPlot, *_subLeadingJetPTPlot, *_thirdLeadingJetPTPlot, *_dijetInvariantMassPlot, *_recoDijetInvariantMassPlot;
     TH1 *_cutLeadingJetPTPlot, *_cutSubLeadingJetPTPlot, *_cutThirdLeadingJetPTPlot, *_cutDijetInvariantMassPlot;
     TH1 *_leadingJetInvisiblePlot, *_subLeadingJetInvisiblePlot, *_thirdLeadingJetInvisiblePlot, *_leadingJetDarknessPlot, *_subLeadingJetDarknessPlot, *_thirdLeadingJetDarknessPlot;
     TH1 *_cutLeadingJetInvisiblePlot, *_cutSubLeadingJetInvisiblePlot, *_cutThirdLeadingJetInvisiblePlot, *_cutLeadingJetLeptonPlot, *_cutSubLeadingJetLeptonPlot, *_cutThirdLeadingJetLeptonPlot;
