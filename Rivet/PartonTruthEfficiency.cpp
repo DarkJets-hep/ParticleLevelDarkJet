@@ -115,18 +115,16 @@ namespace Rivet{
         }
 
         virtual void init() override{
-            const FinalState cnfs;
-            const ChargedFinalState cfs(cnfs);
-            this->declare(cnfs, "FS");
-            this->declare(cfs, "CFS");
-            this->declare(FastJets(cnfs, FastJets::ANTIKT, this->_jetRadius, JetAlg::Muons::ALL, this->_includeInvisibles ? JetAlg::Invisibles::ALL : JetAlg::Invisibles::NONE), "Jets");
+            const FinalState stableParticles;
+            this->declare(stableParticles, "FS");
+            this->declare(FastJets(stableParticles, FastJets::ANTIKT, this->_jetRadius, JetAlg::Muons::ALL, this->_includeInvisibles ? JetAlg::Invisibles::ALL : JetAlg::Invisibles::NONE), "Jets");
 
             this->_canvas.Print(this->_pdf + "[");
         }
 
         virtual void analyze(const Event& event) override{
             //Find the excited quark
-            const FinalState &cnfs = this->apply<FinalState>(event, "FS");
+            const FinalState &finalState = this->apply<FinalState>(event, "FS");
             const Jets &jets = this->apply<FastJets>(event, "Jets").jetsByPt();
             const Jets &leadingJets = (this->_plotSecondChildren == 2) ? Jets{jets[0], jets[1], jets[2], jets[3]} : Jets{jets[0], jets[1]};
             Particle excitedQuark;
@@ -154,21 +152,41 @@ namespace Rivet{
             this->_numberOfParticles[excitedQuark.pid()]++;
             this->_decays[excitedQuark.pid()][Decay::fromParent(excitedQuark)]++;
 
+            //Find the children of the particle
+            Particles plottedPartonLevelParticles, finalPartonLevelParticles;
+            for(Particle child: excitedQuark.children()){
+                plottedPartonLevelParticles.push_back(child);
+                if(this->_plotSecondChildren && (this->_plotSecondChildren == 2 || child.mass() > 50)){
+                    while(child.children().size() == 1){
+                        child = child.children()[0];
+                    }
+                    const Particles secondChildren = child.children();
+                    finalPartonLevelParticles.insert(finalPartonLevelParticles.end(), secondChildren.begin(), secondChildren.end());
+                    plottedPartonLevelParticles.insert(plottedPartonLevelParticles.end(), secondChildren.begin(), secondChildren.end());
+                }
+                else{
+                    finalPartonLevelParticles.push_back(child);
+                }
+            }
+
             //Count the efficiency and purity of the jets
-            for(const Particle &parton: excitedQuark.children()){
+            Jets remainingLeadingJets = leadingJets;
+            for(const Particle &parton: this->_plotSecondChildren == 2 ? finalPartonLevelParticles : excitedQuark.children()){
                 double deltaR = 1e6;    //Start with something that's guaranteed to be much larger than the actual deltaR
-                Jet jet;
-                for(const Jet &newJet: leadingJets){
-                    const double deltaY = parton.rapidity() - newJet.rapidity();
-                    double deltaPhi = parton.phi() - newJet.phi();
+                Jets::iterator jetIterator;
+                for(Jets::iterator newJet = remainingLeadingJets.begin(); newJet != remainingLeadingJets.end(); newJet++){
+                    const double deltaY = parton.rapidity() - newJet->rapidity();
+                    double deltaPhi = parton.phi() - newJet->phi();
                     if(deltaPhi < -M_PI) deltaPhi += 2 * M_PI;
                     else if(deltaPhi > M_PI) deltaPhi -= 2 * M_PI;
                     const double newDeltaR = std::sqrt(deltaY * deltaY + deltaPhi * deltaPhi);
                     if(newDeltaR < deltaR){
                         deltaR = newDeltaR;
-                        jet = newJet;
+                        jetIterator = newJet;
                     }
                 }
+                const Jet jet = *jetIterator;
+                remainingLeadingJets.erase(jetIterator);
 
                 //Efficiency
                 for(int i = deltaR * this->_deltaRBins / this->_deltaRMax; i < this->_deltaRBins + 1; i++){
@@ -195,7 +213,7 @@ namespace Rivet{
                     this->_partonPTPlotByType[parton.abspid()]->Fill(parton.pT());
                 }
                 double fsPT = 0.0, fsInJetPT = 0.0;
-                for(const Particle &particle: cnfs.particles()){
+                for(const Particle &particle: finalState.particles()){
                     if(particleIsFromParton(particle, parton)){
                         fsPT += particle.pT();
                         if(jet.containsParticle(particle)){
@@ -258,23 +276,6 @@ namespace Rivet{
             this->_darkJetMultiplicity50Data[darkJetMultiplicity50]++;
             this->_darkJetMultiplicity80Data[darkJetMultiplicity80]++;
 
-            //Find the children of the particle
-            Particles plottedPartonLevelParticles, finalPartonLevelParticles;
-            for(Particle child: excitedQuark.children()){
-                plottedPartonLevelParticles.push_back(child);
-                if(this->_plotSecondChildren && child.mass() > 50){
-                    while(child.children().size() == 1){
-                        child = child.children()[0];
-                    }
-                    const Particles secondChildren = child.children();
-                    finalPartonLevelParticles.insert(finalPartonLevelParticles.end(), secondChildren.begin(), secondChildren.end());
-                    plottedPartonLevelParticles.insert(plottedPartonLevelParticles.end(), secondChildren.begin(), secondChildren.end());
-                }
-                else{
-                    finalPartonLevelParticles.push_back(child);
-                }
-            }
-
             //Only plot the 10 events of each kind, but allow 20 events for decay modes that can be more interesting (W- or Z-bosons since they can decay further)
             if(this->_decays[excitedQuark.pid()][Decay::fromParent(excitedQuark)] > (finalPartonLevelParticles.size() == 2 ? 10 : 20)){
                 return;
@@ -293,7 +294,7 @@ namespace Rivet{
             const auto jetPolygons = plotJets(leadingJets, this->_jetRadius, jetColors);
 
             //Plot the stable particles
-            for(const Particle &finalParticle: cnfs.particles()){
+            for(const Particle &finalParticle: finalState.particles()){
                 int marker = 20;
                 if(!finalParticle.isVisible()){
                     if(finalParticle.isNeutrino()){
@@ -377,7 +378,7 @@ namespace Rivet{
                 darkJetMultiplicity80Plot.Fill(multiplicityEventsPair.first - 0.1, multiplicityEventsPair.second);
                 darkJetMultiplicity80Plot.Fill(multiplicityEventsPair.first + 0.1, multiplicityEventsPair.second);
             }
-            this->plotHistograms({&jetMultiplicityPlot, &darkJetMultiplicity20Plot, &darkJetMultiplicity50Plot, &darkJetMultiplicity80Plot}, std::vector<TString>{"No darkness cut", "20% Darkness cut", "50% Darkness cut", "80% Darkness cut"}, ", p_{T} cut = 100 GeV");
+            this->plotHistograms({&jetMultiplicityPlot, &darkJetMultiplicity20Plot, &darkJetMultiplicity50Plot, &darkJetMultiplicity80Plot}, std::vector<TString>{"All jets", "#it{f}_{dark} > 0.2", "#it{f}_{dark} > 0.5", "#it{f}_{dark} > 0.8"}, ", p_{T} cut = 100 GeV");
 
             //Close the plot
             this->_canvas.Print(this->_pdf + "]");
@@ -394,7 +395,7 @@ namespace Rivet{
             //Print the efficiency, purity and response
             std::cout << std::endl;
             std::cout << "Purity: " << (100.0 * this->_purePT / this->_totalPT) << "%" << std::endl;
-            std::cout << "Efficiency at DeltaR = R: " << (50.0 * this->_efficiencyData[this->_efficiencyData.size() * this->_jetRadius / this->_deltaRMax] / this->numEvents()) << "%" << std::endl;
+            std::cout << "Efficiency at DeltaR = R: " << ((this->_plotSecondChildren == 2 ? 25.0 : 50.0) * this->_efficiencyData[this->_efficiencyData.size() * this->_jetRadius / this->_deltaRMax] / this->numEvents()) << "%" << std::endl;
             std::cout << "Average response: " << (this->_responseSum / this->_numberOfEventsWithResponse) << std::endl;
         }
 

@@ -15,13 +15,7 @@ namespace Rivet{
     public:
         Lifetime(): Analysis("Lifetime"){}
 
-        virtual void init() override{
-            const FinalState cnfs;
-            const ChargedFinalState cfs(cnfs);
-            this->declare(cnfs, "FS");
-            this->declare(cfs, "CFS");
-            this->declare(FastJets(cnfs, FastJets::ANTIKT, 1.0, JetAlg::Muons::ALL, JetAlg::Invisibles::ALL), "Jets");
-        }
+        virtual void init() override{}
 
         virtual void analyze(const Event& event) override{
             for(Particle particle: event.allParticles()){
