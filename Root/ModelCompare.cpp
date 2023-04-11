@@ -74,6 +74,9 @@ int main(int argc, char **argv){
     canvas.Print(outfile + "[");
     for(const auto &p: plotGroups){
         std::vector<std::pair<TString, TH1D*>> plotGroup = p.second;
+        const TString name = plotGroup[0].second->GetName();
+        const bool logscale = name.EndsWith("Invisible") || name.EndsWith("Lepton");
+        canvas.SetLogy(logscale);
         std::sort(plotGroup.begin(), plotGroup.end(), [](const std::pair<TString, TH1D*> &a, const std::pair<TString, TH1D*> &b){
             return a.second->GetMaximum() > b.second->GetMaximum();
         });
@@ -92,22 +95,22 @@ int main(int argc, char **argv){
             const TString model = s.first;
             if(model.BeginsWith("EJ")){
                 if(jetRadius == "1.0"){
-                    std::cout << "Warning: mixing jet radiuses: EJ models have jet radius 0.4, others have jet radius 1.0.";
+                    std::cout << "Warning: mixing jet radiuses: EJ models have jet radius 0.4, others have jet radius 1.0." << std::endl;
                 }
                 jetRadius = "0.4";
                 process = "X' #bar{X}' #rightarrow q #bar{q}_{D} #bar{q} q_{D}";
             }
             else{
                 if(jetRadius == "0.4"){
-                    std::cout << "Warning: mixing jet radiuses: EJ models have jet radius 0.4, others have jet radius 1.0.";
+                    std::cout << "Warning: mixing jet radiuses: EJ models have jet radius 0.4, others have jet radius 1.0." << std::endl;
                 }
                 jetRadius = "1.0";
                 process = "Z' #rightarrow q_{D} #bar{q}_{D}";
             }
             models.push_back("Model " + model);
         }
-        drawTitle(plotGroup[0].second, "Anti-#it{k_{t}}, #it{R} = " + jetRadius + ", with invisibles, p_{T} cut = 100 GeV, Darkness cut = 80%\n" + process);
-        const auto legend = drawLegend(plotGroup[0].second, colors, models);
+        drawTitle(plotGroup[0].second, "Anti-#it{k_{t}}, #it{R} = " + jetRadius + ", with invisibles, p_{T} cut = 100 GeV" + (name.BeginsWith("ModelCompare_Cut_") ? ", Darkness cut = 80%" : "") + "\n" + process, logscale);
+        const auto legend = drawLegend(plotGroup[0].second, colors, models, logscale);
         canvas.Print(outfile);
     }
     canvas.Print(outfile + "]");
