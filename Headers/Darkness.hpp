@@ -10,13 +10,16 @@
 static bool particleIsDark(const Rivet::Particle &particle){
     static const std::regex darkParticleRegex(
         getStringFromEnvVar(
-            //Allow to override the dark regex by setting an environment variable
+            //Allow to override dark regex by setting an environment variable
             "DARK_REGEX",
             //Default regex that matches PDGIDs of dark particles
             std::string("^490[0-9][1-9][0-9]{2}$")
         )
     );
-    return std::regex_search(std::to_string(particle.abspid()), darkParticleRegex);
+    return std::regex_search(
+        std::to_string(particle.abspid()),
+        darkParticleRegex
+    );
 }
 
 static bool hasDarkAncestor(Rivet::Particle particle){
@@ -33,48 +36,50 @@ static bool hasDarkAncestor(Rivet::Particle particle){
 }
 
 static double pTDarkness(const Rivet::Jet &jet){
-    double result = 0.0;
+    Rivet::FourMomentum darkMomentum;
     for(const Rivet::Particle &particle: jet.particles()){
         if(hasDarkAncestor(particle)){
-            result += particle.pT();
+            darkMomentum += particle.momentum();
         }
     }
-    return std::min(result / jet.pT(), 1.0);
+    return std::min(darkMomentum.pT() / jet.pT(), 1.0);
 }
 
-static bool jetIsDark(const Rivet::Jet &jet){
-    return pTDarkness(jet) >= 0.8;
+//Method to judge if a jet is dark. The default, recommended cut is 80%. 
+//Note that jet should be built including invisible particles.
+static bool jetIsDark(const Rivet::Jet &jet, double darknessCut = 0.8){
+    return pTDarkness(jet) >= darknessCut;
 }
 
 static double multiplicityDarkness(const Rivet::Jet &jet){
-    int result = 0;
+    int darkMultiplicity = 0;
     for(const Rivet::Particle &particle: jet.particles()){
         if(hasDarkAncestor(particle)){
-            result++;
+            darkMultiplicity++;
         }
     }
-    return 1.0 * result / jet.particles().size();
+    return 1.0 * darkMultiplicity / jet.particles().size();
 }
 
 static double multiplicityInvisibility(const Rivet::Jet &jet){
-    int result = 0;
+    int darkMultiplicity = 0;
     for(const Rivet::Particle &particle: jet.particles()){
         if(!particle.isVisible()){
-            result++;
+            darkMultiplicity++;
         }
     }
-    return 1.0 * result / jet.particles().size();
+    return 1.0 * darkMultiplicity / jet.particles().size();
 }
 
 static double pTInvisibility(const Rivet::Jet &jet){
-    double result = 0.0;
+    Rivet::FourMomentum darkMomentum;
     for(const Rivet::Particle &particle: jet.particles()){
         if(!particle.isStable()){
             std::cout << "Unstable particle in jet" << std::endl;
         }
         if(!particle.isVisible()){
-            result += particle.pT();
+            darkMomentum += particle.momentum();
         }
     }
-    return std::min(result / jet.pT(), 1.0);
+    return std::min(darkMomentum.pT() / jet.pT(), 1.0);
 }

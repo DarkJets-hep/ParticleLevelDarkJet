@@ -9,8 +9,10 @@
 #include <vector>
 #include <memory>
 #include <regex>
+#include <cmath>
 
-#define TH1D_PAGE_COORDINATES2(x, y) (histogram->GetBinLowEdge(histogram->GetNbinsX()) + histogram->GetBinWidth(histogram->GetNbinsX())) * (x), histogram->GetMaximum() * 1.07 * (y)
+#define FIX_LOGSCALE_Y(y) (logscale ? 1.22 * std::pow(histogram->GetMaximum(), (y) / histogram->GetMaximum()) : (y))
+#define TH1D_PAGE_COORDINATES2(x, y) (histogram->GetBinLowEdge(histogram->GetNbinsX()) + histogram->GetBinWidth(histogram->GetNbinsX())) * (x), FIX_LOGSCALE_Y(histogram->GetMaximum() * 1.07 * (y))
 #define TH1D_PAGE_COORDINATES4(x1, y1, x2, y2) TH1D_PAGE_COORDINATES2(x1, y1), TH1D_PAGE_COORDINATES2(x2, y2)
 #define TH2D_PAGE_COORDINATES2(x, y) ((histogram->GetXaxis()->GetXmax() - histogram->GetXaxis()->GetXmin()) * (x) + histogram->GetXaxis()->GetXmin()), ((histogram->GetYaxis()->GetXmax() - histogram->GetYaxis()->GetXmin()) * (y) * 1.02 + histogram->GetYaxis()->GetXmin())
 #define TH2D_PAGE_COORDINATES4(x1, y1, x2, y2) TH2D_PAGE_COORDINATES2(x1, y1), TH2D_PAGE_COORDINATES2(x2, y2)
@@ -24,16 +26,16 @@ inline TString modelName(const TString &fileName){
     return "?";
 }
 
-inline void drawLatex(TLatex &latex, const TH1D *histogram, double x, double y, const TString &str){
+inline void drawLatex(TLatex &latex, const TH1D *histogram, double x, double y, const TString &str, bool logscale){
     latex.DrawLatex(TH1D_PAGE_COORDINATES2(x, y), str);
 }
 
-inline void drawLatex(TLatex &latex, const TH2D *histogram, double x, double y, const TString &str){
+inline void drawLatex(TLatex &latex, const TH2D *histogram, double x, double y, const TString &str, bool = false){
     latex.DrawLatex(TH2D_PAGE_COORDINATES2(x, y), str);
 }
 
 template<typename TH1D_or_TH2D>
-static void drawTitle(const TH1D_or_TH2D *histogram, const TString &title){
+static void drawTitle(const TH1D_or_TH2D *histogram, const TString &title, bool logscale = false){
     TLatex latex;
     latex.SetTextSize(0.025);
     std::istringstream stream(title.Data());
@@ -43,12 +45,12 @@ static void drawTitle(const TH1D_or_TH2D *histogram, const TString &title){
         lines.push_back(line);
     }
     for(std::size_t i = 0; i < lines.size(); i++){
-        drawLatex(latex, histogram, 0, 1 + (lines.size() - i - 1) * 0.05, "#bf{" + lines[i] + "}");
+        drawLatex(latex, histogram, 0, 1 + (lines.size() - i - 1) * 0.05, "#bf{" + lines[i] + "}", logscale);
     }
 }
 
 //Always assign the return value of this function to a variable even if it isn't used, otherwise the objects will be deleted from memory and won't be drawn
-static std::vector<std::unique_ptr<TObject>> drawLegend(const TH1D *histogram, const std::vector<int> &colors, const std::vector<TString> &legends){
+static std::vector<std::unique_ptr<TObject>> drawLegend(const TH1D *histogram, const std::vector<int> &colors, const std::vector<TString> &legends, bool logscale = false){
     std::vector<std::unique_ptr<TObject>> objects;
 
     TLatex latex;
@@ -67,7 +69,7 @@ static std::vector<std::unique_ptr<TObject>> drawLegend(const TH1D *histogram, c
         line->SetLineColor(i == 0 ? TH1D().GetLineColor() : colors[i - 1]);
         line->Draw();
         objects.push_back(std::move(line));
-        drawLatex(latex, histogram, xOffset + 0.12, yOffset + 0.95 - i * 0.05, "#bf{" + legends[i] + "}");
+        drawLatex(latex, histogram, xOffset + 0.12, yOffset + 0.95 - i * 0.05, "#bf{" + legends[i] + "}", logscale);
     }
 
     return objects;
@@ -133,6 +135,7 @@ static std::vector<std::unique_ptr<TObject>> drawLegend(const TH2D *histogram, c
     return objects;
 }
 
+#undef FIX_LOGSCALE_Y
 #undef TH1D_PAGE_COORDINATES2
 #undef TH1D_PAGE_COORDINATES4
 #undef TH2D_PAGE_COORDINATES2
