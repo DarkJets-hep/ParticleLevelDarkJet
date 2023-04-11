@@ -52,11 +52,15 @@ int main(int argc, char **argv){
         else if(arg == "-h" || arg == "--help"){
             std::cout << "Usage: runDarkJetStudy [options] infile" << std::endl
                 << "Options:" << std::endl
-                << "  -d, --dark-regex <regex>:          A regex that defines which PDG ID corresponds to a dark particle. Defaults to ^490[0-9][1-9][0-9]{2}$, which works for most models." << std::endl
-                << "  -h, --help:                        Show this help text and exit" << std::endl
-                << "  -n, --num-events <integer>:        Set the number of events to <integer>, defaults to 10" << std::endl
-                << "  -o, --output <path>:               Set the path of the output ROOT file to <path>, defaults to RecoTruthEfficiency.root" << std::endl;
+                << "  -d, --dark-regex <regex>:    A regex that defines which PDG ID corresponds to a dark particle. Defaults to ^490[0-9][1-9][0-9]{2}$, which works for most models." << std::endl
+                << "  -h, --help:                  Show this help text and exit" << std::endl
+                << "  -n, --num-events <integer>:  Set the number of events to <integer>, defaults to 10" << std::endl
+                << "  -o, --output <path>:         Set the path of the output ROOT file to <path>, defaults to RecoTruthEfficiency.root" << std::endl
+                << "  -p, --pair-sm-and-dark-jets: If this is enabled, when calculating the dijet invariant mass, choose the two leading jets such that one is an SM jet and the other is a dark jet. Otherwise, simply choose the two most energetic jets." << std::endl;
             return 0;
+        }
+        else if(arg == "-p" || arg == "--pair-sm-and-dark-jets"){
+            DarkJetStudy::pairJets = true;
         }
         else{
             std::cerr << "Cannot interpret argument: " << argv[argi] << std::endl;
