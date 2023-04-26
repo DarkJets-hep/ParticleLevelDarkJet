@@ -1,0 +1,100 @@
+! File: svjs.cmnd
+#SVJ s-channel production with HV shower
+
+# Settings that will be used in a main program.
+Main:numberOfEvents = 10000        ! number of events to generate
+Main:timesAllowErrors = 3          ! abort run after this many flawed events
+#Main:runRivet=on
+#Main:analyses=ATLAS_2019_I1740909 
+
+# Settings related to output in init(), next() and stat().
+Init:showChangedSettings = on      ! list changed settings
+Init:showAllSettings = off         ! list all settings
+Init:showChangedParticleData = on  ! list changed particle data
+Init:showAllParticleData = off     ! list all particle data
+Next:numberCount = 1000            ! print message every n events
+Next:numberShowLHA = 1             ! print LHA information n times
+Next:numberShowInfo = 1            ! print event information n times
+Next:numberShowProcess = 1         ! print process record n times
+Next:numberShowEvent = 1           ! print event record n times
+Stat:showPartonLevel = on          ! additional statistics on MPI
+Random:setSeed = on
+
+Random:seed = 111
+
+# Beam parameter settings. Values below agree with default ones.
+Beams:idA = 2212                   ! first beam, p = 2212, pbar = -2212
+Beams:idB = 2212                   ! second beam, p = 2212, pbar = -2212
+Beams:eCM = 13000.                 ! CM energy of collision
+
+
+#Production: Zv, identity 4900023, a boson that can couple both to pairs of Standard Model fermions and to qv qvbar pairs.
+HiddenValley:ffbar2Zv = on
+4900023:mWidth = 0.1
+4900023:rescaleBR = 0.0001
+4900023:12:bratio = 0.9999
+
+# Does 4900023 decays to 4900111 and 4900113? then the following should be fine ...
+
+
+4900101:m0 = 10        # mass/2
+4900101:mWidth = 0.2   # mass/100
+4900101:mMin = 9.8      # mass/2 - mass/100
+4900101:mMax = 10.2      # mass/2 + mass/100
+
+# HV settings
+
+HiddenValley:spinFV = 0
+HiddenValley:Ngauge  = 2
+HiddenValley:Lambda = 10 #lambda
+HiddenValley:alphaFSR = 0.1   #lambda
+HiddenValley:FSR = on
+HiddenValley:fragment = on
+HiddenValley:pTminFSR = 11    # 1.1*lambda
+HiddenValley:probVector = 0.75   
+    
+    
+#For safety reasons
+4900001:m0 = 5000
+4900002:m0 = 5000
+4900003:m0 = 5000
+4900004:m0 = 5000
+4900005:m0 = 5000
+4900006:m0 = 5000
+4900011:m0 = 5000
+4900012:m0 = 5000
+4900013:m0 = 5000
+4900014:m0 = 5000
+4900015:m0 = 5000
+4900016:m0 = 5000
+
+
+
+4900111:m0 = 20       # mass
+4900113:m0 = 20       # mass
+4900211:m0 = 9.99     # mass/2.0-0.01
+4900213:m0 = 9.99     # mass/2.0-0.01
+ 
+ 
+ 
+# Tune, sets PDF as well 
+Tune:ee = 7
+Tune:pp = 21                        ! A14
+                            
+# Set stable
+ParticleDecays:limitTau0 = on      ! set long-lived particle stable ...
+ParticleDecays:tau0Max = 10        ! ... if c*tau0 > 10 mm
+
+#changing r_inv, can vary between 0 and 1
+4900111:onechannel = 1  0.8  91 -3 3                         # 1 + to_st(1.0-inv) + 91 -3 3
+4900111:addchannel = 1  0.2  0 4900211 -4900211              # 1 + to_st(inv) + 0 4900211 -4900211
+4900113:onechannel = 1  0.16 91 -1 1                         # 1 + to_st((1-inv)/5.) + 91 -1 1
+4900113:addchannel = 1  0.16 91 -2 2                         # 1  + to_st((1-inv)/5.)  + 91 -2 2
+4900113:addchannel = 1  0.16 91 -3 3                         # 1 + to_st((1-inv)/5.) + 91 -3 3
+4900113:addchannel = 1  0.16 91 -4 4                         # 1 + to_st((1-inv)/5.) + 91 -4 4
+4900113:addchannel = 1  0.16 91 -5 5                         # 1+ to_st((1-inv)/5.) +  91 -5 5
+4900113:addchannel = 1  0.2  0 4900213 -4900213              # 1 + to_st(inv) + 0 4900213 -4900213  
+
+4900023:m0 = 1500  # mediator mass , scan 1000-5000 in steps of 500   	    
+
+   

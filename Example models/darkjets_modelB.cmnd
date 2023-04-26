@@ -1,0 +1,82 @@
+! File: darkjets.cmond
+! This file contains commands to be read in for a Pythia8 run.
+! Lines not beginning with a letter or digit are comments.
+! Names are case-insensitive  -  but spellings-sensitive!
+! The changes here are illustrative, not always physics-motivated.
+
+# Settings that will be used in a main program.
+Main:numberOfEvents = 10000       ! number of events to generate
+Main:timesAllowErrors = 3          ! abort run after this many flawed events
+
+# Settings related to output in init(), next() and stat().
+Init:showChangedSettings = on      ! list changed settings
+Init:showAllSettings = off         ! list all settings
+Init:showChangedParticleData = on  ! list changed particle data
+Init:showAllParticleData = off     ! list all particle data
+Next:numberCount = 1000            ! print message every n events
+Next:numberShowLHA = 1             ! print LHA information n times
+Next:numberShowInfo = 1            ! print event information n times
+Next:numberShowProcess = 1         ! print process record n times
+Next:numberShowEvent = 1           ! print event record n times
+Stat:showPartonLevel = on          ! additional statistics on MPI
+Random:setSeed = on
+
+Random:seed = 111
+
+
+# Beam parameter settings. Values below agree with default ones.
+Beams:idA = 2212                   ! first beam, p = 2212, pbar = -2212
+Beams:idB = 2212                   ! second beam, p = 2212, pbar = -2212
+Beams:eCM = 13000.                 ! CM energy of collision
+
+
+# settings for dark sector 
+4900023:mWidth = 0.1
+HiddenValley:spinFV = 0
+4900023:rescaleBR = 0.0001
+4900023:12:bratio = 0.9999
+HiddenValley:Ngauge = 3
+                   
+
+
+# Model settings, model B
+4900101:m0 = 2
+4900111:m0 = 2
+4900113:m0 = 4.67
+4900211:m0 = 2
+4900213:m0 = 4.67
+
+
+# dark meson decays
+4900111:addChannel = 1 1.0 102 3 -3
+4900113:addChannel = 1 1.0 102 4900111 4900111
+4900211:addChannel = 1 1.0 102 3 -3
+4900213:addChannel = 1 1.0 102 4900111 4900111
+
+# dark jet event processes
+HiddenValley:ffbar2Zv = on
+
+# Hadronization
+HiddenValley:probVector = 0.441 
+HiddenValley:nFlav = 6 
+HiddenValley:fragment = on
+
+# Shower
+HiddenValley:FSR = on
+HiddenValley:alphaOrder = 1
+HiddenValley:Lambda = 2.0 
+HiddenValley:pTminFSR = 2.2  
+
+                           
+
+# Tune, sets PDF as well 
+Tune:ee = 7
+Tune:pp = 21                        ! A14
+                            
+# Set stable
+ParticleDecays:limitTau0 = on      ! set long-lived particle stable ...
+ParticleDecays:tau0Max = 10        ! ... if c*tau0 > 10 mm
+
+
+4900023:m0 = 1500 #mediator mass will vary between 100 and 3000
+                            
