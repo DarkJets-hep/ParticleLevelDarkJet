@@ -12,10 +12,10 @@
 #include "../Headers/Darkness.hpp"
 #include "../Headers/Decay.hpp"
 #include "../Headers/ParticleName.hpp"
-#include "../Headers/PlotParticle.hpp"
 #include "../Headers/ParticleSort.hpp"
 #include "../Headers/GetEnvVars.hpp"
-#include "../Headers/Legend.hpp"
+#include "../Root/Legend.hpp"
+#include "PlotParticle.hpp"
 
 enum PlotColor{
     NONE = 0,
@@ -54,7 +54,7 @@ namespace Rivet{
                 this->_bins, 0.0, this->_maxPT    //x bins, min x, max x
             ),
             _jetResponsePlot(
-                "", ";Response (Truth jet #it{p_{T}} / Parton #it{p_{T}});Number of events",
+                "", ";Response (Particle level jet #it{p_{T}} / Parton #it{p_{T}});Number of events",
                 this->_bins, 0.0, this->_maxResponse    //x bins, min x, max x
             ),
             _fsResponsePlot(
@@ -62,19 +62,19 @@ namespace Rivet{
                 this->_bins, 0.0, this->_maxResponse*3/2    //x bins, min x, max x
             ),
             _fsInJetResponsePlot(
-                "", ";#it{p_{T}} of final state children of parton in truth jet / Parton #it{p_{T}};Number of events",
+                "", ";#it{p_{T}} of final state children of parton in particle level jet / Parton #it{p_{T}};Number of events",
                 this->_bins, 0.0, this->_maxResponse    //x bins, min x, max x
             ),
             _leadingJetPTPlot(
-                "", ";#it{p_{T}} of truth jet (GeV);Number of events",
+                "", ";#it{p_{T}} of particle level jet (GeV);Number of events",
                 this->_bins, 0.0, this->_maxPT/2    //x bins, min x, max x
             ),
             _subLeadingJetPTPlot(
-                "", ";#it{p_{T}} of truth jet (GeV);Number of events",
+                "", ";#it{p_{T}} of particle level jet (GeV);Number of events",
                 this->_bins, 0.0, this->_maxPT/2    //x bins, min x, max x
             ),
             _thirdLeadingJetPTPlot(
-                "", ";#it{p_{T}} of truth jet (GeV);Number of events",
+                "", ";#it{p_{T}} of particle level jet (GeV);Number of events",
                 this->_bins, 0.0, this->_maxPT/2    //x bins, min x, max x
             ),
             _dijetInvariantMassPlot(
@@ -82,27 +82,27 @@ namespace Rivet{
                 this->_bins, 0.0, this->_maxPT    //x bins, min x, max x
             ),
             _leadingJetInvisiblePlot(
-                "", ";Invisibility of truth jet (%);Number of events",
+                "", ";Invisibility of particle level jet (%);Number of events",
                 this->_bins, 0.0, 100.0    //x bins, min x, max x
             ),
             _subLeadingJetInvisiblePlot(
-                "", ";Invisibility of truth jet (%);Number of events",
+                "", ";Invisibility of particle level jet (%);Number of events",
                 this->_bins, 0.0, 100.0    //x bins, min x, max x
             ),
             _thirdLeadingJetInvisiblePlot(
-                "", ";Invisibility of truth jet (%);Number of events",
+                "", ";Invisibility of particle level jet (%);Number of events",
                 this->_bins, 0.0, 100.0    //x bins, min x, max x
             ),
             _leadingJetDarknessPlot(
-                "", ";Darkness of truth jet (%);Number of events",
+                "", ";Darkness of particle level jet (%);Number of events",
                 this->_bins, 0.0, 100.0    //x bins, min x, max x
             ),
             _subLeadingJetDarknessPlot(
-                "", ";Darkness of truth jet (%);Number of events",
+                "", ";Darkness of particle level jet (%);Number of events",
                 this->_bins, 0.0, 100.0    //x bins, min x, max x
             ),
             _thirdLeadingJetDarknessPlot(
-                "", ";Darkness of truth jet (%);Number of events",
+                "", ";Darkness of particle level jet (%);Number of events",
                 this->_bins, 0.0, 100.0    //x bins, min x, max x
             ),
             _resonancePdgId(getIntVectorFromEnvVar("RES_PDGID", std::vector<int>{4900001, 4900023}))
@@ -329,7 +329,7 @@ namespace Rivet{
         virtual void finalize() override{
             //Plot the efficiency
             TH1D efficiencyPlot(
-                "", ";#it{#Delta R};Efficiency between parton and truth jet (%)",
+                "", ";#it{#Delta R};Efficiency between parton and particle level jet (%)",
                 this->_deltaRBins, 0.0, this->_deltaRMax    //x bins, min x, max x
             );
             for(int i = 0; i < this->_deltaRBins + 1; i++){
@@ -356,7 +356,7 @@ namespace Rivet{
             //Plot the jet multiplicity
             const int maxMultiplicity = std::max_element(this->_jetMultiplicityData.begin(), this->_jetMultiplicityData.end(), [](const std::pair<int, int> &a, const std::pair<int, int> &b){return a.first < b.first;})->first;
             TH1D darkJetMultiplicity80Plot(
-                "", ";Truth jet multiplicity;Number of events",
+                "", ";Particle level jet multiplicity;Number of events",
                 maxMultiplicity * 2 + 2, 0.0, maxMultiplicity + 1    //x bins, min x, max x
             ),
             &darkJetMultiplicity50Plot = *static_cast<TH1D*>(darkJetMultiplicity80Plot.Clone()),
