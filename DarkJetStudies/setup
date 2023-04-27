@@ -1,5 +1,0 @@
-cd build
-setupATLAS
-asetup 22.2.88,AnalysisBase,here
-source */setup.sh
-cd -
