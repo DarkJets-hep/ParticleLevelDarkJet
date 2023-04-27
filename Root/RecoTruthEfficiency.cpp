@@ -4,7 +4,7 @@
 #include <TCanvas.h>
 #include <TMarker.h>
 #include <iostream>
-#include "../Headers/Legend.hpp"
+#include "Legend.hpp"
 
 int main(int argc, char **argv){
     TString infile, outfile;
