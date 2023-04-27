@@ -36,13 +36,13 @@ static bool hasDarkAncestor(Rivet::Particle particle){
 }
 
 static double pTDarkness(const Rivet::Jet &jet){
-    Rivet::FourMomentum darkMomentum;
+    Rivet::FourMomentum momentum;
     for(const Rivet::Particle &particle: jet.particles()){
         if(hasDarkAncestor(particle)){
-            darkMomentum += particle.momentum();
+            momentum += particle.momentum();
         }
     }
-    return std::min(darkMomentum.pT() / jet.pT(), 1.0);
+    return std::min(momentum.pT() / jet.pT(), 1.0);
 }
 
 //Method to judge if a jet is dark. The default, recommended cut is 80%. 
@@ -52,34 +52,51 @@ static bool jetIsDark(const Rivet::Jet &jet, double darknessCut = 0.8){
 }
 
 static double multiplicityDarkness(const Rivet::Jet &jet){
-    int darkMultiplicity = 0;
+    int multiplicity = 0;
     for(const Rivet::Particle &particle: jet.particles()){
         if(hasDarkAncestor(particle)){
-            darkMultiplicity++;
+            multiplicity++;
         }
     }
-    return 1.0 * darkMultiplicity / jet.particles().size();
-}
-
-static double multiplicityInvisibility(const Rivet::Jet &jet){
-    int darkMultiplicity = 0;
-    for(const Rivet::Particle &particle: jet.particles()){
-        if(!particle.isVisible()){
-            darkMultiplicity++;
-        }
-    }
-    return 1.0 * darkMultiplicity / jet.particles().size();
+    return 1.0 * multiplicity / jet.particles().size();
 }
 
 static double pTInvisibility(const Rivet::Jet &jet){
-    Rivet::FourMomentum darkMomentum;
+    Rivet::FourMomentum momentum;
     for(const Rivet::Particle &particle: jet.particles()){
-        if(!particle.isStable()){
-            std::cout << "Unstable particle in jet" << std::endl;
-        }
         if(!particle.isVisible()){
-            darkMomentum += particle.momentum();
+            momentum += particle.momentum();
         }
     }
-    return std::min(darkMomentum.pT() / jet.pT(), 1.0);
+    return std::min(momentum.pT() / jet.pT(), 1.0);
+}
+
+static double multiplicityInvisibility(const Rivet::Jet &jet){
+    int multiplicity = 0;
+    for(const Rivet::Particle &particle: jet.particles()){
+        if(!particle.isVisible()){
+            multiplicity++;
+        }
+    }
+    return 1.0 * multiplicity / jet.particles().size();
+}
+
+static double pTLeptonFraction(const Rivet::Jet &jet){
+    Rivet::FourMomentum momentum;
+    for(const Rivet::Particle &particle: jet.particles()){
+        if(particle.isLepton()){
+            momentum += particle.momentum();
+        }
+    }
+    return std::min(momentum.pT() / jet.pT(), 1.0);
+}
+
+static double multiplicityLeptonFraction(const Rivet::Jet &jet){
+    int multiplicity = 0;
+    for(const Rivet::Particle &particle: jet.particles()){
+        if(particle.isLepton()){
+            multiplicity++;
+        }
+    }
+    return 1.0 * multiplicity / jet.particles().size();
 }
