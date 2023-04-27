@@ -1,12 +1,12 @@
 # Headers
 
-These C++ headers contain  functions that are meant to be reusable in other projects. These functions are header-only, so you can use them simply by including the correct header. All these headers use Rivet and the C++ standard library.
+These C++ headers contain  functions that are meant to be reusable in other projects. These functions are header-only, so you can use them simply by including the correct header.
 
 ## [Darkness.hpp](https://raw.githubusercontent.com/DarkJets-hep/ParticleLevelDarkJet/main/Headers/Darkness.hpp)
 
 This file contains functions to check the darkness, invisibility and lepton fraction of a jet.
 
-Dependencies: [ParticleSort.hpp](https://raw.githubusercontent.com/DarkJets-hep/ParticleLevelDarkJet/main/Headers/ParticleSort.hpp), [GetEnvVars.hpp](https://raw.githubusercontent.com/DarkJets-hep/ParticleLevelDarkJet/main/Headers/GetEnvVars.hpp)
+Dependencies: Rivet, [ParticleSort.hpp](https://raw.githubusercontent.com/DarkJets-hep/ParticleLevelDarkJet/main/Headers/ParticleSort.hpp), [GetEnvVars.hpp](https://raw.githubusercontent.com/DarkJets-hep/ParticleLevelDarkJet/main/Headers/GetEnvVars.hpp)
 
 Functions:
 
@@ -24,7 +24,7 @@ Functions:
 
 This file contains a `Decay` class, which represents a specific type of decay (for example, $\pi_D \to c\bar{c}$ is one object, $\pi_D \to s\bar{s}$ is a different object).
 
-Dependencies: [ParticleName.hpp](https://raw.githubusercontent.com/DarkJets-hep/ParticleLevelDarkJet/main/Headers/ParticleName.hpp)
+Dependencies: Rivet, [ParticleName.hpp](https://raw.githubusercontent.com/DarkJets-hep/ParticleLevelDarkJet/main/Headers/ParticleName.hpp)
 
 Constructor of the `Decay` class:
 
@@ -51,6 +51,8 @@ Overloaded operators of the `Decay` class:
 
 This file contains functions to get particle names from PDG IDs.
 
+Dependencies: Rivet
+
 Functions:
 
 - **`std::string particleName(int pdgid)`**: Returns the name of the Rivet constant corresponding to `pdgid`. For example, `particleName(11)` returns `ELECTRON`, since `Rivet::PID::ELECTRON` has the value 11. Note that all particles supported by this function do not have a Rivet constant, for example, `particleName(2224)` returns `DELTAPLUSPLUS`, but `Rivet::PID::DELTAPLUSPLUS` does not exist (there is no Rivet constant corresponding to $\Delta^{++}$). This is the case for $\Delta$, $\Sigma^\*$ and $\Xi^\*$ baryons, $K^\*$, $D^\*$ and $B^\*$ mesons, diquarks and dark particles. The behavior of this function is similar to Rivet's built-in `Rivet::PID::ParticleNames::particleName()` function, but the built-in one is incomplete.
@@ -61,7 +63,22 @@ Functions:
 
 This file contains utility functions for sorting.
 
+Dependencies: Rivet
+
 Functions:
 
 - **`template<typename T1, typename T2> std::vector<std::pair<T1, T2>> sortMap(const std::map<T1, T2> &map)`**: Sorts `map` by value into an `std::vector` of `std::pairs`. This function is not related to Rivet, but is included here since I need it in my Rivet code.
 - **`Rivet::Particles particlesByEnergy(Rivet::Particles particles)`**: Returns a vector of Rivet particles containing the same particles as `particles`, but sorted by energy.
+
+## [GetEnvVars.hpp](https://raw.githubusercontent.com/DarkJets-hep/ParticleLevelDarkJet/main/Headers/GetEnvVars.hpp)
+
+This file contains utility functions for reading environment variables. This isn't directly related to Rivet (so this file can be used without having Rivet installed), but is included here since I use it in my Rivet code.
+
+Dependencies: None
+
+Functions:
+
+- **`int getIntFromEnvVar(const char *name, int def)`**: If the environment variable with name `name` exists and is a valid integer, returns that integer, otherwise returns `def`.
+- **`double getDoubleFromEnvVar(const char *name, double def)`**: If the environment variable with name `name` exists and is a valid double, returns that double, otherwise returns `def`.
+- **`template<typename String> String getStringFromEnvVar(const char *name, const String &def)`**: If the environment variable with name `name` exists, returns its contents as a string, otherwise returns `def`. This is a template in order to be able to use it both for `std::string` and `TString`. The template argument can be any type that a `char*` can be converted to.
+- **`std::vector<int> getIntVectorFromEnvVar(const char *name, const std::vector<int> &def)`**: If the environment variable with name `name` exists and is a comma-seperated list of integers, returns those integers stored in a `std::vector<int>`, otherwise returns `def`.
