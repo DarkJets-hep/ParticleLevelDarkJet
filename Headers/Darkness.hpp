@@ -4,8 +4,8 @@
 #include <Rivet/Jet.hh>
 #include <string>
 #include <regex>
-#include "../Headers/ParticleSort.hpp"
-#include "../Headers/GetEnvVars.hpp"
+#include "ParticleSort.hpp"
+#include "GetEnvVars.hpp"
 
 static bool particleIsDark(const Rivet::Particle &particle){
     static const std::regex darkParticleRegex(
