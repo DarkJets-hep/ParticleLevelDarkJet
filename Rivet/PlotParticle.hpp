@@ -9,7 +9,7 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
-#include "ParticleName.hpp"
+#include "../Headers/ParticleName.hpp"
 
 static void plotParticle(const Rivet::Particle &particle, int style, int color = EColor::kBlack, bool showLabel = true, double size = 1.0){
     if(std::abs(particle.rapidity()) > 4){
