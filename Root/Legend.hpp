@@ -7,6 +7,7 @@
 #include <TH1D.h>
 #include <TH2D.h>
 #include <TStyle.h>
+#include <TMarker.h>
 #include <vector>
 #include <memory>
 #include <regex>
