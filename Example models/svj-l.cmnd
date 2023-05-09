@@ -1,0 +1,115 @@
+
+    ! 1) Settings used in the main program.
+    Main:numberOfEvents = 50000    ! number of events to generate
+    Main:timesAllowErrors = 3      ! abort run after this many flawed events
+
+    	!Random seed = 0 gives random seed based on time.
+    	Random:setSeed = on
+	Random:seed = 0
+
+	! 2) Settings related to output in init(), next() and stat().
+	Init:showChangedSettings = on      ! list changed settings
+	Init:showAllSettings = on         ! list all settings
+	Init:showChangedParticleData = on  ! list changed particle data
+	Init:showAllParticleData = on     ! list all particle data
+	Next:numberCount = 1000            ! print message every n events
+	Next:numberShowLHA = 1             ! print LHA information n times
+	Next:numberShowInfo = 1            ! print event information n times
+	Next:numberShowProcess = 1         ! print process record n times
+	Next:numberShowEvent = 1           ! print event record n times
+	Stat:showPartonLevel = on          ! additional statistics on MPI
+
+	! 3) Beam parameter settings. Values below agree with default ones.
+	Beams:idA = 2212                   ! first beam, p = 2212, pbar = -2212
+	Beams:idB = 2212                   ! second beam, p = 2212, pbar = -2212
+	Beams:eCM = 13000.                 ! CM energy of collision
+
+	! 4) Turn on the production process.
+	HiddenValley:ffbar2Zv = on
+	4900023:m0 = 2000
+	4900023:mMin = 1999
+	4900023:mMax = 2001
+	4900023:mWidth = 0.01
+	4900023:doForceWidth = on
+	4900101:m0 = 10
+    	4900101:mWidth = 0.2
+
+
+	4900023:oneChannel = 1 0.982 102 4900101 -4900101
+	4900023:addChannel = 1 0.003 102 1 -1
+	4900023:addChannel = 1 0.003 102 2 -2
+	4900023:addChannel = 1 0.003 102 3 -3
+	4900023:addChannel = 1 0.003 102 4 -4
+	4900023:addChannel = 1 0.003 102 5 -5
+	4900023:addChannel = 1 0.003 102 6 -6
+
+	! 5) For MC efficiency let zprime decay only to dark quarks.
+	4900023:onMode = off
+	4900023:onIfAny = 4900101
+
+    ! 6) HiddenValley Settings
+    HiddenValley:Ngauge = 3                          ! number of colours
+    HiddenValley:nFlav = 2                           ! number of flavours
+    HiddenValley:fragment = on
+    HiddenValley:FSR = on
+    HiddenValley:alphaOrder = 1                      ! use running coupling
+    HiddenValley:Lambda = 10                       ! dark confinement scale
+    HiddenValley:pTminFSR = 11                     ! pT cut off on dark shower (IR regulator)
+    HiddenValley:spinFv=0                            ! spin of bifundamentals, which are not used, but set for consistency
+    HiddenValley:probVector=0.75
+
+    ! 7) dark sector meson mass spectrum
+    !4900101:m0 = 10.2                                ! Dark Quark Mass, here we fix the current quark mass to 200 MeV by defualt
+    4900111:m0 = 10.0                                  ! Setting pi'0  Mass since mpi/lambda = 1.6
+    4900113:m0 = 25.8                   ! Setting rho'0 Mass from lattice
+    4900211:m0 = 4.99                                  ! Setting pi0'+-  Mass
+    4900213:m0 = 25.8                  ! Setting rho'+- Mass
+
+    4900022:mayDecay = true
+    4900022:m0 = 0.150              !mass of dark photon is set to 200 MeV
+!    4900022:0:meMode = 0            !pfff
+
+    !Invisible particles
+    51:m0 = 0.0
+    51:isResonance = false
+    53:m0 = 0.0
+    53:isResonance = false
+
+    ! decouple HV quarks and leptons partners
+    4900001:m0 = 5000
+    4900002:m0 = 5000
+    4900003:m0 = 5000
+    4900004:m0 = 5000
+    4900005:m0 = 5000
+    4900006:m0 = 5000
+    4900011:m0 = 5000
+    4900012:m0 = 5000
+    4900013:m0 = 5000
+    4900014:m0 = 5000
+    4900015:m0 = 5000
+    4900016:m0 = 5000
+
+    4900113:onMode = off
+    4900022:onMode = off
+
+    ! 8) branching ratios
+
+    #This is for Rinv 0.7, for other values, simply change following the formula on the right
+
+    4900111:onechannel = 1  0.3  91 -3 3               # 1 + to_st(1.0-inv) + 91 -3 3
+    4900111:addchannel = 1  0.7  0 4900211 -4900211    # 1 + to_st(inv) + 0 4900211 -4900211
+
+
+    4900113:oneChannel = on 1. 0 4900022    ! rho 0 --> gamma_hv
+!    4900022:oneChannel = on 1. 0 11 -11     ! gamma_hv --> e+ e-
+    4900022:oneChannel = on 0.105 0 11 -11     ! gamma_hv --> e+ e-
+
+!    4900111:tau0 = 0.01        ! proper lifetime, in mm
+!    4900113:tau0 = 0.01        ! proper lifetime, in mm
+
+    ! 6) Other settings. Can be expanded as desired.
+    ! Note: may overwrite some of the values above, so watch out.
+    !Tune:ee = 7
+    !Tune:pp = 21                        ! use Tune 4Cx
+    !ParticleDecays:limitTau0 = on      ! set long-lived particle stable ...
+    !ParticleDecays:tau0Max = 10        ! ... if c*tau0 > 10 mm
