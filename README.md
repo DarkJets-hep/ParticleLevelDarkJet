@@ -1,4 +1,6 @@
 # ParticleLevelDarkJet
+This is the repository containing the code for Gustav Lindberg's masters thesis, [Defining dark jets at the particle level](https://lup.lub.lu.se/student-papers/search/publication/9129410).
+
 This repository contains four folders:
 
 - [Example models](https://github.com/DarkJets-hep/ParticleLevelDarkJet/tree/main/Example%20models) contains Pythia cards for the models with a dijet topology studied in this thesis (Models A-E and SVJ).
